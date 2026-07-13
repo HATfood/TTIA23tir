@@ -1,0 +1,2207 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>گزارش عملکرد و دستاوردهای راهبردی - انجمن صنایع چای استان تهران</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons for outstanding UI stability -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts: Vazirmatn (Best Persian Font for Presentations) -->
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;500;700;900&display=swap" rel="stylesheet">
+    <!-- React & ReactDOM UMD -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Vazirmatn', 'sans-serif'],
+                    },
+                    colors: {
+                        tea: {
+                            50: '#FAF6EE',   // Premium Warm Cream Background
+                            100: '#F3EFE3',  // Slightly darker cream for cards
+                            500: '#2C5E43',  // Rich Tea Forest Green
+                            800: '#153222',  // Ultra dark tea green for maximum text contrast
+                            900: '#0B1C13',
+                        },
+                        goldTea: {
+                            100: '#F9F3E6',
+                            500: '#C5A059',  // Elegant Gold Accent
+                            600: '#B48E47',
+                            700: '#8E6F33',  // Strong contrast gold for borders
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            background-color: #FAF6EE; /* Forced warm cream color */
+            color: #153222;
+            overflow: hidden; /* Prevent body scroll entirely */
+        }
+        /* Extra high legibility presentation optimizations */
+        .projector-contrast {
+            text-shadow: 0 1px 2px rgba(21, 50, 34, 0.05);
+        }
+        /* Custom smooth transition for slide changes */
+        .slide-fade-enter {
+            opacity: 0;
+            transform: scale(0.99) translateY(4px);
+        }
+        .slide-fade-enter-active {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            transition: all 300ms ease-out;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(50%); }
+        }
+        .animate-marquee {
+            display: flex;
+            width: max-content;
+            animation: marquee 35s linear infinite;
+        }
+        /* 3D Card Flipping Styles */
+        .card-container {
+            perspective: 1000px;
+        }
+        .card-flipper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+        /* Flip on hover or active class */
+        .card-container:hover .card-flipper,
+        .card-container.is-flipped .card-flipper {
+            transform: rotateY(180deg);
+        }
+        .card-front, .card-back {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 24px;
+            overflow: hidden;
+        }
+        .card-back {
+            transform: rotateY(180deg);
+        }
+    </style>
+</head>
+<body class="h-screen max-h-screen overflow-hidden flex flex-col justify-between">
+
+    <div id="root" class="h-full max-h-screen overflow-hidden flex flex-col justify-between"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // Utility helper to convert numbers to Persian digits
+        const toPersianDigits = (num) => {
+            if (num === null || num === undefined) return '';
+            const id = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+            return num.toString().replace(/[0-9]/g, (w) => id[+w]);
+        };
+
+        // Array of formal Persian company names for mapping A1-A13
+        const companyNames = [
+            "هستی آرین تامین",                  // A1
+            "تولید و تجارت کاوه نوش",           // A2
+            "گلستان",                           // A3
+            "بهشت قندیل",                       // A4
+            "چای شهرزاد",                       // A5
+            "تولیدی زرین درنما شرق",            // A6
+            "نگین صنعتی جنوب منطقه آزاد چابهار", // A7
+            "شرکت چای مانی",                    // A8
+            "بازرگانی خدماتی گلچین طلایی تهران", // A9
+            "طبیعت سبز پارس کهن",               // A10
+            "گیتی نگین ایرانیان",               // A11
+            "چای احمد تهران",                   // A12
+            "بهار پردیس محمود"                  // A13
+        ];
+
+        function InteractiveNetworkGraph({ isExpanded, toggleExpand }) {
+            const canvasRef = useRef(null);
+            const animationRef = useRef(null);
+            const [nodes, setNodes] = useState([]);
+            const draggedNodeRef = useRef(null);
+            const mouseRef = useRef({ x: 0, y: 0 });
+
+            // Initialize Nodes with larger parameters & longer connection springs
+            useEffect(() => {
+                const width = isExpanded ? window.innerWidth * 0.9 : 680;
+                const height = isExpanded ? window.innerHeight * 0.8 : 340; // Balanced height to fit perfectly in 1200p
+                const centerX = width / 2;
+                const centerY = height / 2;
+
+                const centerNode = {
+                    id: 'center',
+                    x: centerX,
+                    y: centerY,
+                    vx: 0,
+                    vy: 0,
+                    radius: 72, // Substantially enlarged central node
+                    isCenter: true,
+                    label: 'انجمن چای',
+                    imgSrc: 'ttialogo.png',
+                    img: null
+                };
+
+                const loadedCenterImg = new Image();
+                loadedCenterImg.src = centerNode.imgSrc;
+                loadedCenterImg.onload = () => { centerNode.img = loadedCenterImg; };
+
+                // Satellite Nodes representing the 13 members with larger radii and wider initial offsets
+                const satelliteNodes = Array.from({ length: 13 }, (_, i) => {
+                    const id = i + 1;
+                    const angle = (i / 13) * Math.PI * 2;
+                    const distance = 200; // Significantly lengthened spring connection distance for projector
+                    const satNode = {
+                        id: `A${id}`,
+                        x: centerX + Math.cos(angle) * distance,
+                        y: centerY + Math.sin(angle) * distance,
+                        vx: 0,
+                        vy: 0,
+                        radius: 32, // Enormously styled satellite nodes
+                        isCenter: false,
+                        label: `A${id}`,
+                        imgSrc: `A${id}.png`,
+                        img: null
+                    };
+
+                    const img = new Image();
+                    img.src = satNode.imgSrc;
+                    img.onload = () => { satNode.img = img; };
+                    satNode.img = img;
+
+                    return satNode;
+                });
+
+                setNodes([centerNode, ...satelliteNodes]);
+            }, [isExpanded]);
+
+            // Physics Animation Loop
+            useEffect(() => {
+                if (nodes.length === 0) return;
+
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+
+                const updatePhysicsAndRender = () => {
+                    const width = canvas.width;
+                    const height = canvas.height;
+                    const centerX = width / 2;
+                    const centerY = height / 2;
+
+                    ctx.clearRect(0, 0, width, height);
+
+                    const kSpring = 0.04; 
+                    const restLength = 190; // Longer edges (یال‌ها)
+                    const damping = 0.82;
+                    const repulsionK = 1500; // Greater repulsion to accommodate larger node sizes
+
+                    const centerNode = nodes.find(n => n.isCenter);
+                    if (centerNode && draggedNodeRef.current !== centerNode) {
+                        centerNode.vx += (centerX - centerNode.x) * 0.04;
+                        centerNode.vy += (centerY - centerNode.y) * 0.04;
+                        centerNode.x += centerNode.vx;
+                        centerNode.y += centerNode.vy;
+                        centerNode.vx *= damping;
+                        centerNode.vy *= damping;
+                    }
+
+                    // Apply Forces
+                    for (let i = 0; i < nodes.length; i++) {
+                        const n1 = nodes[i];
+                        if (n1.isCenter) continue;
+
+                        if (draggedNodeRef.current === n1) {
+                            n1.x = mouseRef.current.x;
+                            n1.y = mouseRef.current.y;
+                            n1.vx = 0;
+                            n1.vy = 0;
+                            continue;
+                        }
+
+                        // Attraction to central node
+                        if (centerNode) {
+                            const dx = centerNode.x - n1.x;
+                            const dy = centerNode.y - n1.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                            const force = (dist - restLength) * kSpring;
+                            n1.vx += (dx / dist) * force;
+                            n1.vy += (dy / dist) * force;
+                        }
+
+                        // Mutual Repulsion
+                        for (let j = 0; j < nodes.length; j++) {
+                            if (i === j) continue;
+                            const n2 = nodes[j];
+                            const dx = n1.x - n2.x;
+                            const dy = n1.y - n2.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                            const minDist = n1.radius + n2.radius + 50;
+
+                            if (dist < minDist) {
+                                const force = repulsionK / (dist * dist);
+                                n1.vx += (dx / dist) * force;
+                                n1.vy += (dy / dist) * force;
+                            }
+                        }
+
+                        n1.x += n1.vx;
+                        n1.y += n1.vy;
+
+                        n1.vx *= damping;
+                        n1.vy *= damping;
+
+                        // Wall Collision
+                        const margin = n1.radius + 10;
+                        if (n1.x < margin) { n1.x = margin; n1.vx *= -0.4; }
+                        if (n1.x > width - margin) { n1.x = width - margin; n1.vx *= -0.4; }
+                        if (n1.y < margin) { n1.y = margin; n1.vy *= -0.4; }
+                        if (n1.y > height - margin) { n1.y = height - margin; n1.vy *= -0.4; }
+                    }
+
+                    // Draw spring lines
+                    if (centerNode) {
+                        nodes.forEach(n => {
+                            if (n.isCenter) return;
+                            ctx.beginPath();
+                            ctx.moveTo(centerNode.x, centerNode.y);
+                            ctx.lineTo(n.x, n.y);
+                            ctx.strokeStyle = '#C5A059'; 
+                            ctx.lineWidth = 3.5; // Thicker lines for excellent visibility
+                            ctx.globalAlpha = 0.7;
+                            ctx.stroke();
+                            ctx.globalAlpha = 1.0;
+                        });
+                    }
+
+                    // Draw Nodes with completely clean non-clipped circular layouts (Removed circular frame/border as requested)
+                    nodes.forEach(node => {
+                        ctx.save();
+
+                        if (node.img && node.img.complete && node.img.naturalWidth !== 0) {
+                            const size = node.radius * 2;
+                            ctx.drawImage(node.img, node.x - node.radius, node.y - node.radius, size, size);
+                        } else {
+                            ctx.beginPath();
+                            ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+                            ctx.fillStyle = node.isCenter ? '#2C5E43' : '#FAF6EE';
+                            ctx.fill();
+
+                            ctx.fillStyle = node.isCenter ? '#FAF6EE' : '#153222';
+                            ctx.font = `bold ${node.isCenter ? 15 : 12}px Vazirmatn`;
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(node.label, node.x, node.y + 1);
+                        }
+
+                        ctx.restore();
+                    });
+
+                    animationRef.current = requestAnimationFrame(updatePhysicsAndRender);
+                };
+
+                updatePhysicsAndRender();
+
+                return () => {
+                    cancelAnimationFrame(animationRef.current);
+                };
+            }, [nodes]);
+
+            const handleStart = (clientX, clientY) => {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const rect = canvas.getBoundingClientRect();
+                const x = clientX - rect.left;
+                const y = clientY - rect.top;
+
+                for (let i = nodes.length - 1; i >= 0; i--) {
+                    const node = nodes[i];
+                    const dist = Math.hypot(node.x - x, node.y - y);
+                    if (dist < node.radius + 15) {
+                        draggedNodeRef.current = node;
+                        mouseRef.current = { x, y };
+                        break;
+                    }
+                }
+            };
+
+            const handleMove = (clientX, clientY) => {
+                if (!draggedNodeRef.current) return;
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const rect = canvas.getBoundingClientRect();
+                mouseRef.current = {
+                    x: clientX - rect.left,
+                    y: clientY - rect.top
+                };
+            };
+
+            const handleEnd = () => {
+                draggedNodeRef.current = null;
+            };
+
+            return (
+                <div className={`relative bg-white border-2 border-goldTea-500/30 rounded-3xl p-1 shadow-inner flex flex-col items-center justify-center ${isExpanded ? 'fixed inset-4 z-[100] bg-tea-50/95 backdrop-blur-md' : 'w-full h-full'}`}>
+                    {/* Expand Trigger */}
+                    <button 
+                        onClick={toggleExpand}
+                        className="absolute top-3 left-3 z-20 text-xs bg-goldTea-500 text-white px-3 py-1.5 rounded-xl font-bold hover:bg-goldTea-600 transition shadow-sm flex items-center gap-1.5"
+                    >
+                        <i className={`fa-solid ${isExpanded ? 'fa-compress' : 'fa-expand'}`}></i>
+                        <span>{isExpanded ? 'بستن' : 'بزرگ‌نمایی'}</span>
+                    </button>
+
+                    <canvas 
+                        ref={canvasRef}
+                        width={isExpanded ? window.innerWidth * 0.9 : 680}
+                        height={isExpanded ? window.innerHeight * 0.8 : 340}
+                        onMouseDown={(e) => handleStart(e.clientX, e.clientY)}
+                        onMouseMove={(e) => handleMove(e.clientX, e.clientY)}
+                        onMouseUp={handleEnd}
+                        onMouseLeave={handleEnd}
+                        onTouchStart={(e) => handleStart(e.touches[0].clientX, e.touches[0].clientY)}
+                        onTouchMove={(e) => handleMove(e.touches[0].clientX, e.touches[0].clientY)}
+                        onTouchEnd={handleEnd}
+                        className="bg-tea-50/20 rounded-2xl cursor-grab active:cursor-grabbing"
+                    />
+                </div>
+            );
+        }
+
+        function App() {
+            const [currentSlide, setCurrentSlide] = useState(0);
+            const [isFullscreen, setIsFullscreen] = useState(false);
+            const [showSlideMap, setShowSlideMap] = useState(false);
+            const [isGraphExpanded, setIsGraphExpanded] = useState(false);
+            const [activeListModal, setActiveListModal] = useState(null); // 'correspondence' | 'directors' | 'meetings' | null
+            const touchStartX = useRef(0);
+            const touchEndX = useRef(0);
+
+            // Local state for Slide 7 interactive tree path (Based on handwritten document: image_85ba60.png)
+            const [selectedVoucherPath, setSelectedVoucherPath] = useState('all'); // 'all' | 'vp' | 'chamber' | 'minister' | 'oral'
+            
+            // Local state for Slide 8 interactive tree path (Based on handwritten document: image_86907e.png)
+            const [selectedVoucherPath8, setSelectedVoucherPath8] = useState('all'); // 'all' | 'minister' | 'commission' | 'four_associations' | 'chamber_dialogue' | 'food_industry' | 'central_bank' | 'import_fed' | 'chamber_president'
+
+            // Local state for Slide 9 interactive tree paths (Based on handwritten document: image_869c1c.png)
+            const [activeSlide9Topic, setActiveSlide9Topic] = useState('kenya'); // 'kenya' | 'ceylon'
+            const [selectedKenyaPath, setSelectedKenyaPath] = useState('all'); // 'all' | 'path1' | 'path2' | 'path3' | 'path4'
+
+            // Raw Lists for Slide 5
+            const correspondenceList = [
+                "مکاتبه و درخواست به ارگان‌های مختلف در خصوص قرارگیری چای در کالابرگ خانوار",
+                "مکاتبات در  خصوص پیگیری درخواست مابه‌التفاوت نرخ ارز تالار اول و دوم",
+                "مکاتبه و پیگیری مشکلات مربوط به تهاتر سریلانکا",
+                "برگزاری جلسات و پیگیری مکرر مشکلات واردات چای از کشور کنیا",
+                "شرکت هیئت مدیره در جلسه هم‌اندیشی برای مبارزه با قاچاق و تقلب چای",
+                "شرکت در کارگروه‌های بررسی قیمت‌گذاری چای و...",
+                "شرکت در کارگروه‌های ارزی و بررسی شرایط جهانی چای و...",
+                "مکاتبه و درخواست اصلاح نرخ حقوق گمرکی چای خشک خارجی",
+                "مکاتبه و درخواست تعدیل نرخ ارزش افزوده از ۱۰ به ۱ درصد",
+                "درخواست افزایش سهمیه واردات چای برای شرکت‌های عضو انجمن",
+                "مکاتبه و ارائه گزارش مبسوط از بازار چای به دکتر سلامی (وزارت جهاد)",
+                "مکاتبات متعدد و درخواست تخصیص ارزهای معوقه طی ۴ فصل سال ۱۴۰۴",
+                "مکاتبه با وزیر جهاد کشاورزی و درخواست اجرایی نمودن مصوبه هیئت وزیران ۱۳۴۰۰م مورخ ۱۴۰۴/۰۴/۱۲",
+                "مکاتبه و پیگیری از وزیر جهاد کشاورزی و درخواست جبران مابه‌التفاوت نرخ ریالی ارز کالای چای",
+                "مکاتبه با ریاست کمیسیون کشاورزی مجلس با موضوع جبران مابه‌التفاوت ارز",
+                "مکاتبه و پیگیری تعیین تکلیف و وضعیت محموله‌های چای آسیب‌دیده در بندر شهید رجایی",
+                "مکاتبه نهاد ریاست جمهوری و اعلام مشکلات پیش روی انجمن، ارائه راهکار و درخواست رسیدگی به مشکلات",
+                "مکاتبه با معاونت وزارت اقتصاد و دارایی (آقای دکتر زمانیان) درخواست پیگیری و صدور دستور جبران مابه‌التفاوت ارزی",
+                "مکاتبه و پیگیری رفع مشکل تامین و تنظیم بازار چای از وزارت جهاد کشاورزی",
+                "مکاتبه و درخواست رفع محدودیت و اتصال اینترنت بین‌الملل برای شرکت‌های عضو انجمن از طریق فدراسیون واردات"
+            ];
+
+            const directorsList = [
+                "دکتر رضا خواجه نائینی",
+                "دکتر محمدرضا طلایی",
+                "دکتر هومن فتحی",
+                "دکتر شهرام آذین",
+                "دکتر عبدالعظیم بهفر",
+                "دکتر محمدعلی دهقان دهنوی",
+                "دکتر کربلایی اسماعیلی",
+                "دکتر سیدمجید قنادزاده",
+                "دکتر مهدی برومندی",
+                "دکتر علیرضا گچ‌پززاده",
+                "مدیران اتاق بازرگانی ایران",
+                "مدیران اتاق بازرگانی تهران",
+                "رؤسای کمیسیون‌های مجلس شورای اسلامی",
+                "نمایندگان مجلس شورای اسلامی",
+                "آقای حبیب جهانساز (رئیس سازمان چای)",
+                "هیئت کنیایی و نماینده وزارت امور خارجه"
+            ];
+
+            const meetingsList = [
+                "وزارت جهاد کشاورزی",
+                "وزارت صنعت، معدن و تجارت",
+                "سازمان غذا و دارو",
+                "کمیسیون کشاورزی مجلس",
+                "کمیسیون و فدراسیون واردات",
+                "بانک مرکزی",
+                "وزارت امور اقتصادی و دارایی",
+                "سازمان توسعه تجارت ایران",
+                "معاونت ستاد مبارزه با کالای قاچاق و ارز",
+                "اتاق بازرگانی ایران",
+                "اتاق بازرگانی تهران",
+                "شورای گفتگو",
+                "مجلس شورای اسلامی"
+            ];
+
+            // Modal configuration helper
+            const modalData = {
+                correspondence: {
+                    title: "لیست کامل نمونه مکاتبات و پیگیری‌های راهبردی",
+                    icon: "fa-envelope-open-text",
+                    items: correspondenceList
+                },
+                directors: {
+                    title: "لیست کامل جلسات و هم‌اندیشی با مدیران ارشد",
+                    icon: "fa-user-tie",
+                    items: directorsList
+                },
+                meetings: {
+                    title: "لیست کامل حضور در جلسات",
+                    icon: "fa-users-line",
+                    items: meetingsList
+                }
+            };
+
+            const slides = [
+                /* Slide 1: Welcome */
+                {
+                    id: 0,
+                    title: "خوش‌آمدید",
+                    category: "آغاز ارائه",
+                    content: (
+                        <div className="flex flex-col items-center justify-center text-center h-full space-y-6 py-2">
+                            <div className="bg-white p-5 rounded-3xl border-4 border-goldTea-500 shadow-xl max-w-sm mx-auto">
+                                <img 
+                                    src="ttialogo.png" 
+                                    alt="لوگو انجمن صنایع چای" 
+                                    className="h-32 md:h-40 w-auto object-contain mx-auto"
+                                    onError={(e) => {
+                                        e.target.onerror = null;
+                                        e.target.parentNode.innerHTML = `
+                                            <div class="text-tea-500 flex flex-col items-center justify-center">
+                                                <i class="fa-solid fa-leaf text-6xl text-goldTea-600 mb-2"></i>
+                                                <span class="font-black text-lg text-tea-800">انجمن صنایع چای تهران</span>
+                                            </div>
+                                        `;
+                                    }}
+                                />
+                            </div>
+                            <div className="space-y-3">
+                                <h1 className="text-3xl md:text-5xl font-black text-tea-800 leading-tight projector-contrast">
+                                    مجمع عمومی عادی سالیانه
+                                </h1>
+                                <h2 className="text-xl md:text-2xl text-goldTea-700 font-bold">
+                                    انجمن صنایع چای استان تهران 
+                                </h2>
+                            </div>
+                            <div className="h-1.5 w-32 bg-goldTea-500 rounded-full my-2"></div>
+                            <div className="space-y-1">
+                                <p className="text-base md:text-lg text-tea-500 font-semibold">
+                                    دوره زمانی: مهر ماه لغایت اسفند ۱۴۰۴
+                                </p>
+                                <span className="inline-block bg-tea-500 text-white text-xs md:text-sm px-5 py-2 rounded-2xl font-bold border-2 border-goldTea-500/30">
+                                    گزارش عملکرد
+                                </span>
+                            </div>
+                        </div>
+                    )
+                },
+                /* Slide 2: Structural Org Intro (REVISED ITEMS) */
+                {
+                    id: 1,
+                    title: "ارکان ساختاری",
+                    category: "مسیر شکل‌گیری",
+                    content: (
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center h-full py-2">
+                            <div className="lg:col-span-7 space-y-4 text-right">
+                                <span className="bg-goldTea-500/10 text-goldTea-700 border-2 border-goldTea-500/30 text-xs px-3 py-1 rounded-full font-bold">بخش اول ارائه</span>
+                                <h2 className="text-2xl md:text-4xl font-black text-tea-800 leading-tight">  مسیر شکل‌گیری انجمن و ارکان ساختاری</h2>
+                                <p className="text-tea-900 leading-relaxed text-base md:text-xl font-medium">
+                                    مروری دقیق بر گاه‌شمار شکل‌گیری رسمی، چارچوب اداری و اهداف کلان تأسیس انجمن صنایع چای استان تهران به عنوان نهاد قانونی و معتبر.
+                                </p>
+                                <div className="p-4 bg-goldTea-100/60 rounded-2.5xl border-2 border-goldTea-500/30 flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-2xl bg-tea-500 text-white flex items-center justify-center text-2xl shrink-0">
+                                        <i className="fa-solid fa-circle-info"></i>
+                                    </div>
+                                    <div className="text-sm md:text-base text-tea-800 font-bold leading-relaxed">
+                                        تمام فرآیندهای ثبتی و مراحل قانونی زیرنظرکامل امور تشکل‌های اتاق بازرگانی، صنایع، معادن و کشاورزی تهران صورت پذیرفته است.
+                                    </div>
+                                </div>
+                            </div>
+                                                    </div>
+                    )
+                },
+                /* Slide 3: Formation steps (Interactive Timeline with Logo) */
+                {
+                    id: 2,
+                    title: "گام‌های اولیه ثبت انجمن",
+                    category: "تاسیس و قانون",
+                    content: (
+                        <div className="space-y-4 h-full flex flex-col justify-center">
+                            <div className="flex justify-between items-center border-b-2 border-goldTea-500/20 pb-2">
+                                <h2 className="text-2xl md:text-3xl font-black text-tea-800 flex items-center gap-2">
+                                    <i className="fa-solid fa-file-signature text-goldTea-500"></i>
+                                    <span>گام‌های اولیه ثبت انجمن</span>
+                                </h2>
+                                <img 
+                                    src="ttialogo.png" 
+                                    alt="لوگو" 
+                                    className="h-12 w-auto object-contain bg-white p-1 rounded-xl border border-goldTea-500/30"
+                                    onError={(e) => {
+                                        e.target.onerror = null;
+                                        e.target.parentNode.innerHTML = `
+                                            <div class="text-tea-500 flex flex-col items-center justify-center p-1.5 bg-white border border-goldTea-500/30 rounded-xl">
+                                                <i class="fa-solid fa-leaf text-xl text-goldTea-600"></i>
+                                            </div>
+                                        `;
+                                    }}
+                                />
+                            </div>
+
+                            <div className="relative my-2">
+                                <div className="absolute right-1/2 translate-x-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-goldTea-500 to-tea-500 rounded-full hidden md:block"></div>
+
+                                <div className="space-y-4 md:space-y-3">
+                                    <div className="flex flex-col md:flex-row items-center md:justify-start relative">
+                                        <div className="absolute right-1/2 translate-x-1/2 w-5 h-5 rounded-full bg-goldTea-500 border-4 border-white shadow-md hidden md:block z-20"></div>
+                                        <div className="w-full md:w-[46%] md:ml-auto bg-white p-4 rounded-[24px] border-2 border-goldTea-500/30 shadow-sm relative overflow-hidden">
+                                            <span className="inline-block bg-goldTea-500 text-white text-xs px-3 py-0.5 rounded-full font-black mb-2 shadow-sm">
+                                                ۵ مهر ۱۴۰۴
+                                            </span>
+                                            <h3 className="font-black text-lg text-tea-800 mb-1">برگزاری مجمع عمومی مؤسسین</h3>
+                                            <p className="text-sm md:text-base text-tea-900 leading-relaxed font-semibold">
+                                                تدوین اولین پیش‌نویس اساسنامه با حضور حداکثری شرکت‌های تولیدی صنعت چای کشور و شروع رسمی فرآیند قانونی.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col md:flex-row items-center md:justify-end relative">
+                                        <div className="absolute right-1/2 translate-x-1/2 w-5 h-5 rounded-full bg-tea-500 border-4 border-white shadow-md hidden md:block z-20"></div>
+                                        <div className="w-full md:w-[46%] md:mr-auto bg-white p-4 rounded-[24px] border-2 border-tea-500/30 shadow-sm relative overflow-hidden">
+                                            <span className="inline-block bg-tea-500 text-white text-xs px-3 py-0.5 rounded-full font-black mb-2 shadow-sm">
+                                                ۱۱ بهمن ۱۴۰۴
+                                            </span>
+                                            <h3 className="font-black text-lg text-tea-800 mb-1">ثبت رسمی انجمن</h3>
+                                            <p className="text-sm md:text-base text-tea-900 leading-relaxed font-semibold">
+                                                ثبت رسمی انجمن به شماره ثبت ۶۰۷۱۸ ، شناسه ملی ۱۴۰۱۵۰۸۷۸۹۰ و چاپ رسمی در روزنامه کثیرالانتشار کشور.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-4 bg-tea-500 text-white rounded-2xl border-2 border-goldTea-500 flex flex-col md:flex-row gap-3 items-center">
+                                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-xl shrink-0 text-goldTea-500">
+                                    <i className="fa-solid fa-award"></i>
+                                </div>
+                                <div className="text-right">
+                                    <h4 className="font-black text-base text-goldTea-500">پروانه فعالیت انجمن صنایع چای:</h4>
+                                    <p className="text-xs md:text-sm leading-relaxed font-semibold text-tea-50">
+                                        به استناد بند (ک) ماده ۵ قانون اتاق بازرگانی، صنایع، معادن و کشاورزی ایران ماده ۵ قانون بهبود مستمر محیط کسب و کار  آیین نامه‌های اجرایی دستورالعمل‌ها و اساسنامه‌های نمونه مصوب انجمن صنایع استان تهران تشکیل و تحت شماره ۸۴۸ مورخ ۱۴۰۴/۰۷/۰۵ در اتاق ایران به ثبت رسیده است.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )
+                },
+                /* Slide 4: Governance & Board */
+                {
+                    id: 3,
+                    title: "ساختار انجمن",
+                    category: "مدیریت و اعضا",
+                    content: (
+                        <div className="space-y-2 h-full flex flex-col justify-between overflow-hidden">
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch flex-grow overflow-hidden">
+                                
+                                {/* Left Column: Bold stats & Structured Logos */}
+                                <div className="lg:col-span-6 space-y-3 flex flex-col justify-between text-right">
+
+
+                                    {/* Stats boxes with gradient styled digits */}
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="bg-white p-3 rounded-2xl border-2 border-goldTea-500/20 shadow-sm flex flex-col justify-center items-center text-center">
+                                            <span className="text-3xl md:text-4xl font-black bg-gradient-to-r from-goldTea-700 to-goldTea-500 bg-clip-text text-transparent">۱۳ عضو</span>
+                                            <span className="text-xs font-black text-tea-800 mt-0.5">تعداد کل اعضای ثبت‌شده</span>
+                                        </div>
+
+                                    </div>
+
+
+                                    <div>
+                                        <h2 className="text-2xl md:text-3xl font-black text-tea-800 flex items-center gap-2">
+                                            <i className="fa-solid fa-network-wired text-goldTea-500"></i>
+                                            <span>ارکان اصلی انجمن</span>
+                                        </h2>
+                                    </div>
+
+
+                                    {/* Board & Inspectors Sections with enlarged, properly-contained hover logos */}
+                                    <div className="space-y-3">
+                                        {/* Board Segment */}
+                                        <div className="bg-goldTea-100/30 p-3 rounded-2xl border border-goldTea-500/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                            <div>
+                                                <h4 className="font-black text-sm md:text-base text-tea-800 flex items-center gap-1">
+                                                    <i className="fa-solid fa-user-tie text-goldTea-600"></i>
+                                                    <span>هیئت رئیسه متشکل از ۵ عضو اصلی و ۲ عضو علی البدل</span>
+                                                </h4>
+                                                <p className="mt-8 text-[11px] md:text-xs text-tea-900 font-black"> </p>
+                                            </div>
+{/* Beautifully aligned logos: adjusted sizes with text names */}
+<div className="flex flex-wrap gap-2 justify-end">
+    {Array.from({ length: 7 }, (_, idx) => (
+        <div 
+            key={idx} 
+            className="flex flex-col items-center gap-1 bg-white border border-goldTea-500/10 rounded-xl p-1 hover:scale-110 transition-all duration-300 shadow-sm w-16 md:w-20" 
+            title={companyNames[idx]}
+        >
+            <div className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center overflow-hidden p-0.5">
+                <img 
+                    src={`A${idx + 1}.png`} 
+                    alt={companyNames[idx]} 
+                    className="w-full h-full object-contain" 
+                    onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.parentNode.innerHTML = `<span class="text-[9px] font-black text-goldTea-700">A${idx + 1}</span>`;
+                    }}
+                />
+            </div>
+            <span className="text-[8px] md:text-[9px] font-black text-tea-900 text-center line-clamp-1 w-full border-t border-zinc-100 pt-0.5">
+                {companyNames[idx]} {/* نمایش کلمه اول اسم شرکت برای جلوگیری از شلوغی، یا حذف کدهای split برای اسم کامل */}
+            </span>
+        </div>
+    ))}
+</div>
+                                        </div>
+
+                                        {/* Inspectors Segment */}
+                                        <div className="bg-goldTea-100/30 p-3 rounded-2xl border border-goldTea-500/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                            <div>
+                                                <h4 className="font-black text-sm md:text-base text-tea-800 flex items-center gap-1">
+                                                    <i className="fa-solid fa-file-invoice-dollar text-goldTea-600"></i>
+                                                    <span>۲ عضو به عنوان بازرس اصلی و علی البدل انجمن</span>
+                                                </h4>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2 justify-end">
+    {[8, 9].map((num) => (
+        <div 
+            key={num} 
+            className="flex flex-col items-center gap-1 bg-white border border-goldTea-500/10 rounded-xl p-1 hover:scale-110 transition-all duration-300 shadow-sm w-16 md:w-20" 
+            title={companyNames[num - 1]}
+        >
+            <div className="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center overflow-hidden p-0.5">
+                <img 
+                    src={`A${num}.png`} 
+                    alt={companyNames[num - 1]} 
+                    className="w-full h-full object-contain" 
+                    onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.parentNode.innerHTML = `<span class="text-[9px] font-black text-goldTea-700">A${num}</span>`;
+                    }}
+                />
+            </div>
+            <span className="text-[8px] md:text-[9px] font-black text-tea-900 text-center line-clamp-1 w-full border-t border-zinc-100 pt-0.5">
+                {companyNames[num - 1]}
+            </span>
+        </div>
+    ))}
+</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Right Column: Spring Physics Network Graph of Members (Canvas based) */}
+                                <div className="lg:col-span-6 flex items-center justify-center">
+                                    <InteractiveNetworkGraph 
+                                        isExpanded={isGraphExpanded} 
+                                        toggleExpand={() => setIsGraphExpanded(!isGraphExpanded)} 
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Infinite Marquee section for active members */}
+                            <div className="relative p-2 bg-white border border-goldTea-500/20 rounded-2xl overflow-hidden h-14 shrink-0 flex items-center">
+                                <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none"></div>
+                                <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none"></div>
+                                
+                                <span className="absolute top-1 right-3 text-[10px] font-black text-goldTea-600 z-10">پایش هم‌زمان لوگوی اعضای فعال:</span>
+                                
+                                <div className="overflow-hidden w-full mt-2">
+                                    <div className="animate-marquee">
+                                        {Array.from({ length: 2 }, () => 
+                                            Array.from({ length: 13 }, (_, i) => {
+                                                const id = i + 1;
+                                                return (
+                                                    <div key={`marq-${id}`} className="inline-flex items-center gap-2 mx-6">
+                                                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center overflow-hidden shrink-0 hover:scale-125 transition-all duration-300 p-0.5">
+                                                            <img 
+                                                                src={`A${id}.png`} 
+                                                                alt={companyNames[i]} 
+                                                                className="w-full h-full object-contain" 
+                                                                onError={(e) => {
+                                                                    e.target.style.display = 'none';
+                                                                    e.target.parentNode.innerHTML = `<span class="text-[9px] font-black text-goldTea-600">A${id}</span>`;
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <span className="text-xs font-black text-tea-800 whitespace-nowrap">{companyNames[i]}</span>
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )
+                },
+                /* Slide 5: Operational Stats & Interactive Complete Lists (UPDATED MEETING METRIC) */
+                {
+                    id: 4,
+                    title: "عملکرد عملیاتی",
+                    category: "آمار و ارقام",
+                    content: (
+                        <div className="space-y-4 h-full flex flex-col justify-between overflow-hidden">
+                            {/* Header description */}
+                            <div className="shrink-0 text-right">
+                                <h2 className="text-2xl font-[900] text-tea-800 flex items-center gap-2">
+                                    <i className="fa-solid fa-chart-line text-goldTea-500"></i>
+                                    <span>تعامل مستمر عملیاتی، جلسات راهبردی</span>
+                                </h2>
+                            </div>
+
+                            {/* 3 Metrics Cards */}
+                            <div className="grid grid-cols-3 gap-4 shrink-0">
+
+
+<div className="bg-white p-3 rounded-[24px] border-2 border-goldTea-500/30 relative overflow-hidden shadow-sm flex flex-col justify-between items-center h-full">
+                                    <div className="text-center">
+                                        <span className="block text-3xl md:text-5xl font-[900] text-goldTea-600 tracking-tight leading-none">۳۲</span>
+                                        <span className="text-[11px] md:text-xs font-black text-tea-800 mt-1">نشست‌های رسمی هیئت مدیره</span>
+                                    </div>
+                                    {/* Highly graphical mini-timeline inside the card */}
+                                    <div className="w-full mt-3 pt-2 border-t border-goldTea-500/20 flex flex-col gap-1.5 text-right">
+                                        <div className="flex items-center justify-between text-[11px]">
+                                            <span className="text-tea-500 font-bold">نخستین جلسه:</span>
+                                            <span className="font-black text-tea-800 bg-goldTea-100 px-2 py-0.5 rounded-lg border border-goldTea-500/20">۷ آبان ۱۴۰۴</span>
+                                            <span className="text-tea-500 font-bold">آخرین جلسه:</span>
+                                            <span className="font-black text-tea-800 bg-goldTea-100 px-2 py-0.5 rounded-lg border border-goldTea-500/20">۲۳ تیر ۱۴۰۵</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-[11px]">
+                                            <span className="text-tea-500 font-bold">۱۴۰۴: </span>
+                                            <span className="font-black text-tea-800 bg-tea-500 text-white px-2 py-0.5 rounded-lg"> ۱۸ جلسه در ۲۱هفته</span>
+                                            <span className="text-tea-500 font-bold">۱۴۰۵: </span>
+                                            <span className="font-black text-tea-800 bg-tea-500 text-white px-2 py-0.5 rounded-lg"> ۱۴ جلسه در ۱۷ هفته</span>
+                                        </div>
+                                        {/* Micro timeline dots connector */}
+                                    </div>
+                                </div>
+
+
+<div className="bg-white p-3 rounded-[24px] border-2 border-goldTea-500/30 relative overflow-hidden shadow-sm flex flex-col justify-between items-center h-full">
+                                    <div className="text-center">
+                                    <span className="block text-3xl md:text-5xl font-[900] text-goldTea-600 tracking-tight leading-none">۱۵۱</span>
+                                    <span className="text-[11px] md:text-xs font-black text-tea-800 mt-1.5">مکاتبات صادره </span>
+                                    </div>
+                                    {/* Highly graphical mini-timeline inside the card */}
+                                    <div className="w-full mt-3 pt-2 border-t border-goldTea-500/20 flex flex-col gap-1.5 text-right">
+                                        <div className="flex items-center justify-between text-[11px]">
+                                            <span className="text-tea-500 font-bold">تعداد مکاتبات صادره در سال ۱۴۰۴</span>
+                                            <span className="font-black text-tea-800 bg-goldTea-100 px-2 py-0.5 rounded-lg border border-goldTea-500/20">۷۱</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-[11px]">
+                                            <span className="text-tea-500 font-bold">تعداد مکاتبات صادره در سال ۱۴۰۵</span>
+                                            <span className="font-black text-tea-800 bg-tea-500 text-white px-2 py-0.5 rounded-lg">۸۰</span>
+                                        </div>
+                                        {/* Micro timeline dots connector */}
+                                    </div>
+                                </div>
+
+
+
+
+
+
+<div className="bg-white p-3 rounded-[24px] border-2 border-goldTea-500/30 relative overflow-hidden shadow-sm flex flex-col justify-between items-center h-full">
+                                    <div className="text-center">
+                                    <span className="block text-3xl md:text-5xl font-[900] text-goldTea-600 tracking-tight leading-none">۱۰۳</span>
+                                    <span className="text-[11px] md:text-xs font-black text-tea-800 mt-1.5">مکاتبات وارده و ارجاعی</span>
+                                    </div>
+                                    {/* Highly graphical mini-timeline inside the card */}
+                                    <div className="w-full mt-3 pt-2 border-t border-goldTea-500/20 flex flex-col gap-1.5 text-right">
+                                        <div className="flex items-center justify-between text-[11px]">
+                                            <span className="text-tea-500 font-bold">تعداد مکاتبات وارده در سال ۱۴۰۴</span>
+                                            <span className="font-black text-tea-800 bg-goldTea-100 px-2 py-0.5 rounded-lg border border-goldTea-500/20">۵۳</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-[11px]">
+                                            <span className="text-tea-500 font-bold">تعداد مکاتبات وارده در سال ۱۴۰۵</span>
+                                            <span className="font-black text-tea-800 bg-tea-500 text-white px-2 py-0.5 rounded-lg">۵۰</span>
+                                        </div>
+                                        {/* Micro timeline dots connector */}
+                                    </div>
+                                </div>
+
+
+
+
+                                
+                            </div>
+
+                            {/* 3 Columns with View All buttons */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-grow overflow-hidden">
+                                
+
+
+                                {/* Column 2: Directors Preview */}
+                                <div className="bg-white p-4 rounded-[28px] border-2 border-goldTea-500/20 shadow-sm flex flex-col justify-between overflow-hidden hover:border-goldTea-500/40 transition-colors">
+                                    <div className="space-y-2 overflow-hidden">
+                                        <h3 className="font-black text-sm md:text-base text-tea-800 border-b border-tea-100 pb-1.5 flex items-center gap-2">
+                                            <i className="fa-solid fa-user-tie text-goldTea-600"></i>
+                                            <span>جلسه با مدیران ارشد</span>
+                                        </h3>
+                                        <div className="space-y-2 overflow-hidden">
+                                            {directorsList.slice(0, 3).map((item, idx) => (
+                                                <div key={idx} className="flex items-start gap-2 text-xs text-tea-900 font-semibold leading-relaxed">
+                                                    <i className="fa-solid fa-leaf text-goldTea-500 mt-1 shrink-0 text-[10px]"></i>
+                                                    <span className="truncate" title={item}>{item}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => setActiveListModal('directors')}
+                                        className="w-full mt-2 py-2 rounded-xl bg-goldTea-500/10 hover:bg-goldTea-500 hover:text-white text-goldTea-700 text-xs font-black transition-all border border-goldTea-500/20 flex items-center justify-center gap-1.5 shrink-0"
+                                    >
+                                        <i className="fa-solid fa-eye"></i>
+                                        <span>مشاهده همه مدیران (۱۶ مورد)</span>
+                                    </button>
+                                </div>
+
+                                {/* Column 3: Meetings Preview */}
+                                <div className="bg-white p-4 rounded-[28px] border-2 border-goldTea-500/20 shadow-sm flex flex-col justify-between overflow-hidden hover:border-goldTea-500/40 transition-colors">
+                                    <div className="space-y-2 overflow-hidden">
+                                        <h3 className="font-black text-sm md:text-base text-tea-800 border-b border-tea-100 pb-1.5 flex items-center gap-2">
+                                            <i className="fa-solid fa-users-line text-goldTea-600"></i>
+                                            <span>حضور در جلسات و مجامع</span>
+                                        </h3>
+                                        <div className="space-y-2 overflow-hidden">
+                                            {meetingsList.slice(0, 3).map((item, idx) => (
+                                                <div key={idx} className="flex items-start gap-2 text-xs text-tea-900 font-semibold leading-relaxed">
+                                                    <i className="fa-solid fa-leaf text-goldTea-500 mt-1 shrink-0 text-[10px]"></i>
+                                                    <span className="truncate" title={item}>{item}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => setActiveListModal('meetings')}
+                                        className="w-full mt-2 py-2 rounded-xl bg-goldTea-500/10 hover:bg-goldTea-500 hover:text-white text-goldTea-700 text-xs font-black transition-all border border-goldTea-500/20 flex items-center justify-center gap-1.5 shrink-0"
+                                    >
+                                        <i className="fa-solid fa-eye"></i>
+                                        <span>مشاهده همه جلسات (۱۳ مورد)</span>
+                                    </button>
+                                </div>
+
+
+
+                                {/* Column 1: Correspondence Preview */}
+                                <div className="bg-white p-4 rounded-[28px] border-2 border-goldTea-500/20 shadow-sm flex flex-col justify-between overflow-hidden hover:border-goldTea-500/40 transition-colors">
+                                    <div className="space-y-2 overflow-hidden">
+                                        <h3 className="font-black text-sm md:text-base text-tea-800 border-b border-tea-100 pb-1.5 flex items-center gap-2">
+                                            <i className="fa-solid fa-envelope-open-text text-goldTea-600"></i>
+                                            <span>گزیده مکاتبات انجمن</span>
+                                        </h3>
+                                        <div className="space-y-2 overflow-hidden">
+                                            {correspondenceList.slice(0, 3).map((item, idx) => (
+                                                <div key={idx} className="flex items-start gap-2 text-xs text-tea-900 font-semibold leading-relaxed">
+                                                    <i className="fa-solid fa-leaf text-goldTea-500 mt-1 shrink-0 text-[10px]"></i>
+                                                    <span className="truncate" title={item}>{item}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => setActiveListModal('correspondence')}
+                                        className="w-full mt-2 py-2 rounded-xl bg-goldTea-500/10 hover:bg-goldTea-500 hover:text-white text-goldTea-700 text-xs font-black transition-all border border-goldTea-500/20 flex items-center justify-center gap-1.5 shrink-0"
+                                    >
+                                        <i className="fa-solid fa-eye"></i>
+                                        <span>مشاهده همه مکاتبات (۲۰ مورد)</span>
+                                    </button>
+                                </div>
+
+
+                            </div>
+                        </div>
+                    )
+                },
+                /* Slide 6: Flowchart intro (UPDATED TITLE, CONTENT AND GRAPHICAL TEXT) */
+                {
+                    id: 5,
+                    title: "تحلیل جریان مکاتبات",
+                    category: "مهندسی فرآیند",
+                    content: (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center h-full py-2">
+                            <div className="space-y-4 text-right">
+                                <span className="bg-tea-500/10 text-tea-800 border-2 border-tea-500/30 text-xs px-3 py-1 rounded-full font-bold">بخش دوم ارائه</span>
+                                <h2 className="text-2xl md:text-4xl font-black text-tea-800 leading-tight">جریان صدور و ارجاع مکاتبات کلیدی</h2>
+                                <p className="text-tea-900 leading-relaxed text-sm md:text-lg font-medium">
+                                    در اسلایدهای پیش‌رو، می‌خواهیم مسیر اداری، بازخوردها و زنجیره ارجاع برخی از مکاتبات و نامه‌های مهم و راهبردی انجمن را به طور دقیق ردیابی و بررسی کنیم.
+                                </p>
+                                <div className="flex flex-wrap gap-2 pt-2">
+                                    <span className="bg-white px-3 py-1.5 rounded-xl text-xs md:text-sm font-black text-tea-800 border-2 border-goldTea-500/20 shadow-sm">۱. درج چای در سبد کالابرگ</span>
+                                    <span className="bg-white px-3 py-1.5 rounded-xl text-xs md:text-sm font-black text-tea-800 border-2 border-goldTea-500/20 shadow-sm">۲. مابه‌التفاوت نرخ ارز</span>
+                                    <span className="bg-white px-3 py-1.5 rounded-xl text-xs md:text-sm font-black text-tea-800 border-2 border-goldTea-500/20 shadow-sm">۳. واردات کنیا و تهاتر سیلان</span>
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-center p-6 bg-white rounded-3xl border-2 border-goldTea-500 relative shadow-md">
+                                <div className="text-center space-y-4">
+                                    <div className="w-14 h-14 rounded-2xl bg-goldTea-500/10 flex items-center justify-center text-goldTea-600 text-3xl mx-auto"><i className="fa-solid fa-file-invoice"></i></div>
+                                    <h4 className="font-black text-tea-800 text-lg md:text-xl">شفاف‌سازی و عارضه‌یابی فرآیندها</h4>
+                                    <p className="text-xs md:text-sm text-tea-900 font-medium max-w-sm leading-relaxed">مشاهده دقیق چگونگی گردش اداری درخواست‌ها، موافقت‌ها یا مخالفت‌های دستگاه‌های اجرایی نظیر وزارت جهاد کشاورزی و بانک مرکزی.</p>
+                                </div>
+                            </div>
+                        </div>
+                    )
+                },
+                /* Slide 7: Letter Tree 1 (Fully Redesigned & Large Texts for Projector based on image_85ba60.png) */
+                {
+                    id: 5,
+                    title: "درج چای در کالابرگ",
+                    category: "پرونده اول",
+                    content: null // Managed dynamically below in JSX
+                },
+                /* Slide 8: Letter Tree 2 (Brand New Dynamic Implementation based on image_86907e.png) */
+                {
+                    id: 7,
+                    title: "مابه‌التفاوت نرخ ارز",
+                    category: "پرونده دوم",
+                    content: null // Managed dynamically below in JSX
+                },
+                /* Slide 9: Letter Tree 3 (Dual-Topic Split Presentation based on image_869c1c.png) */
+                {
+                    id: 8,
+                    title: "واردات کنیا و تهاتر",
+                    category: "پرونده سوم",
+                    content: null // Managed dynamically below in JSX
+                },
+                                /* Slide 11: Membership Card & Digital Portal (TTIA.ir) (REPLACED ORIGINAL SLIDE 13 / EXCLUDE OLD SLIDE 12 Q&A) */
+                {
+                    id: 11,
+                    title: "کارت هوشمند و پرتال عضویت",
+                    category: "سامانه الکترونیک",
+                    content: (
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center h-full py-1 text-right">
+                            
+                            {/* Right Column: Descriptions & Details */}
+                            <div className="lg:col-span-7 space-y-4">
+                                <span className="bg-goldTea-500/15 text-goldTea-700 border border-goldTea-500/35 text-xs px-3.5 py-1 rounded-full font-black inline-block">تکنولوژی و هوشمندسازی انجمن</span>
+                                <h2 className="text-2xl md:text-3xl font-[900] text-tea-800 leading-tight">کارت هوشمند عضویت و پرتال جامع انجمن</h2>
+                                <p className="text-tea-900 leading-relaxed text-sm md:text-base font-semibold">
+                                    در راستای تحول دیجیتال صنعت چای، انجمن صنایع چای استان تهران اقدام به صدور گواهینامه رسمی و کارت هوشمند چندمنظوره برای تمامی اعضای رسمی خود نموده است.
+                                </p>
+
+                                {/* Official Website Highlight Box */}
+                                <div className="p-3.5 bg-tea-500 text-white rounded-2xl border-2 border-goldTea-500/30 flex items-center justify-between shadow-md">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-goldTea-500 text-xl shrink-0"><i className="fa-solid fa-globe"></i></div>
+                                        <div>
+                                            <h4 className="font-black text-sm text-goldTea-500">پرتال رسمی و پایگاه جامع انجمن:</h4>
+                                            <p className="text-xs text-tea-50 font-bold mt-0.5">درگاه مرجع استعلام اصالت اعضا، بخش‌نامه‌ها و اخبار انجمن چای خشک</p>
+                                        </div>
+                                    </div>
+                                    <a 
+                                        href="https://TTIA.ir" 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="px-4 py-2 rounded-xl bg-goldTea-500 hover:bg-goldTea-600 text-white font-black text-xs md:text-sm transition-all shadow-md flex items-center gap-1.5"
+                                    >
+                                        <span>TTIA.ir</span>
+                                        <i className="fa-solid fa-up-right-from-square text-[10px]"></i>
+                                    </a>
+                                </div>
+
+                                {/* Features Grid */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    <div className="p-3.5 bg-white border-2 border-goldTea-500/15 rounded-2xl shadow-sm space-y-1">
+                                        <span className="text-goldTea-600 text-lg"><i className="fa-solid fa-wifi"></i></span>
+                                        <h5 className="font-black text-sm text-tea-800">تراشه NFC هوشمند</h5>
+                                        <p className="text-[11px] text-zinc-600 font-black leading-relaxed">انتقال بدون تماس و آنی اطلاعات شخصی و پروفایل اعضای انجمن.</p>
+                                    </div>
+                                    <div className="p-3.5 bg-white border-2 border-goldTea-500/15 rounded-2xl shadow-sm space-y-1">
+                                        <span className="text-goldTea-600 text-lg"><i className="fa-solid fa-qrcode"></i></span>
+                                        <h5 className="font-black text-sm text-tea-800">کد QR اختصاصی</h5>
+                                        <p className="text-[11px] text-zinc-600 font-black leading-relaxed">استعلام و دسترسی به پنل عضویت در وبسایت رسمی انجمن.</p>
+                                    </div>
+                                    <div className="p-3.5 bg-white border-2 border-goldTea-500/15 rounded-2xl shadow-sm space-y-1">
+                                        <span className="text-goldTea-600 text-lg"><i className="fa-solid fa-credit-card"></i></span>
+                                        <h5 className="font-black text-sm text-tea-800">نوار مغناطیسی بانکی</h5>
+                                        <p className="text-[11px] text-zinc-600 font-black leading-relaxed">بهره‌مندی از نوار مغناطیسی در پشت کارت جهت اتصال به شبکه شتاب و استفاده به عنوان کارت فعال بانکی.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Left Column: Visual Mockup for card.png / card2.png (3D Flip card!) */}
+                            <div className="lg:col-span-5 flex flex-col items-center justify-center relative">
+                                <div className="w-full max-w-[360px] aspect-[1.58/1] card-container">
+                                    <div className="card-flipper w-full h-full shadow-2xl rounded-[24px]">
+                                        {/* FRONT of Card */}
+                                        <div className="card-front border-4 border-goldTea-500 bg-white">
+                                            <img 
+                                                src="card.png" 
+                                                alt="روی کارت عضویت هوشمند" 
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    e.target.style.display = 'none';
+                                                    e.target.parentNode.innerHTML = `
+                                                        <div class="w-full h-full bg-gradient-to-br from-tea-800 via-tea-900 to-black text-white p-5 flex flex-col justify-between relative h-full">
+                                                            <div class="absolute inset-0 opacity-15 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-goldTea-500 via-transparent to-transparent pointer-events-none"></div>
+                                                            <div class="flex justify-between items-start z-10">
+                                                                <div class="text-right">
+                                                                    <span class="block text-[10px] font-[900] text-goldTea-500">گواهینامه و کارت هوشمند عضویت (روی کارت)</span>
+                                                                    <span class="block text-[13px] font-[900] tracking-wide text-white">انجمن صنایع چای استان تهران</span>
+                                                                </div>
+                                                                <i class="fa-solid fa-leaf text-2xl text-goldTea-500"></i>
+                                                            </div>
+                                                            <div class="flex items-center gap-3 z-10 mt-2">
+                                                                <div class="w-9 h-7 rounded-md bg-gradient-to-r from-yellow-600 to-yellow-400 border border-yellow-300/40 relative">
+                                                                    <div class="absolute left-1 top-1 w-2 h-5 border-r border-black/20"></div>
+                                                                    <div class="absolute left-3 top-1 w-2 h-5 border-r border-black/20"></div>
+                                                                </div>
+                                                                <i class="fa-solid fa-wifi text-goldTea-500 text-xs rotate-90"></i>
+                                                            </div>
+                                                            <div class="flex justify-between items-end z-10 mt-auto">
+                                                                <div class="text-right">
+                                                                    <span class="block text-[9px] text-zinc-400 font-black">پرتال رسمی استعلام:</span>
+                                                                    <span class="block text-xs font-[900] text-goldTea-500 tracking-wider">TTIA.ir</span>
+                                                                </div>
+                                                                <div class="w-10 h-10 bg-white p-1 rounded-lg border border-goldTea-500/30 flex items-center justify-center shrink-0">
+                                                                    <i class="fa-solid fa-qrcode text-tea-900 text-2xl"></i>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    `;
+                                                }}
+                                            />
+                                        </div>
+                                        {/* BACK of Card */}
+                                        <div className="card-back border-4 border-goldTea-500 bg-white">
+                                            <img 
+                                                src="card2.png" 
+                                                alt="پشت کارت عضویت هوشمند" 
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    e.target.style.display = 'none';
+                                                    e.target.parentNode.innerHTML = `
+                                                        <div class="w-full h-full bg-gradient-to-bl from-zinc-800 via-zinc-900 to-black text-white p-5 flex flex-col justify-between relative h-full">
+                                                            <div class="absolute inset-0 opacity-15 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-goldTea-500 via-transparent to-transparent pointer-events-none"></div>
+                                                            <div class="w-full h-4 bg-black/40 border-y border-zinc-700 mt-2"></div>
+                                                            <div class="flex justify-between items-center z-10 mt-4">
+                                                                <div class="w-3/5 h-6 bg-zinc-200/20 border border-zinc-500/30 rounded flex items-center justify-end px-2">
+                                                                    <span class="text-[9px] text-zinc-400 font-mono">CVV2: 9821</span>
+                                                                </div>
+                                                                <div class="w-12 h-6 bg-amber-500/20 border border-amber-500/40 rounded flex items-center justify-center">
+                                                                    <span class="text-[9px] text-amber-500 font-black">عضویت هوشمند</span>
+                                                                </div>
+                                                            </div>
+                                                            <div class="flex justify-between items-end z-10 mt-auto">
+                                                                <div class="text-right">
+                                                                    <span class="block text-[8px] text-zinc-400 leading-normal">این کارت متعلق به انجمن صنایع چای استان تهران می‌باشد و سوءاستفاده از آن پیگرد قانونی دارد.</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    `;
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                <span className="text-[11px] text-tea-500 font-black mt-3 flex items-center gap-1.5 animate-pulse">
+                                    <i className="fa-solid fa-rotate text-goldTea-600"></i> 
+                                    برای چرخش کارت هوشمند، روی آن کلیک کنید یا موس را روی آن ببرید
+                                </span>
+                            </div>
+                        </div>
+                    )
+                }
+            ];
+
+            // Keyboard navigation
+            useEffect(() => {
+                const handleKeyDown = (e) => {
+                    if (e.key === 'ArrowLeft') {
+                        nextSlide(); 
+                    } else if (e.key === 'ArrowRight') {
+                        prevSlide(); 
+                    }
+                };
+                window.addEventListener('keydown', handleKeyDown);
+                return () => window.removeEventListener('keydown', handleKeyDown);
+            }, [currentSlide]);
+
+            const handleTouchStart = (e) => {
+                touchStartX.current = e.touches[0].clientX;
+            };
+
+            const handleTouchMove = (e) => {
+                touchEndX.current = e.touches[0].clientX;
+            };
+
+            const handleTouchEnd = () => {
+                const swipeThreshold = 50;
+                const difference = touchStartX.current - touchEndX.current;
+                
+                if (difference > swipeThreshold) {
+                    nextSlide(); 
+                } else if (difference < -swipeThreshold) {
+                    prevSlide(); 
+                }
+            };
+
+            const nextSlide = () => {
+                if (currentSlide < slides.length - 1) {
+                    setCurrentSlide(currentSlide + 1);
+                }
+            };
+
+            const prevSlide = () => {
+                if (currentSlide > 0) {
+                    setCurrentSlide(currentSlide - 1);
+                }
+            };
+
+            const toggleFullscreen = () => {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().then(() => {
+                        setIsFullscreen(true);
+                    }).catch(err => {
+                        console.error("خطا در حالت تمام صفحه: ", err);
+                    });
+                } else {
+                    document.exitFullscreen();
+                    setIsFullscreen(false);
+                }
+            };
+
+            return (
+                <div className="flex flex-col h-screen max-h-screen justify-between bg-tea-50 text-tea-800 select-none overflow-hidden">
+                    
+                    {/* TOP PRESENTATION BAR */}
+                    <header className="bg-white border-b-4 border-goldTea-500 px-6 py-3 flex justify-between items-center z-50 shadow-md h-20 shrink-0">
+                        <div className="flex items-center gap-4">
+                            <img 
+                                src="ttialogo.png" 
+                                alt="لوگو" 
+                                className="h-10 w-auto object-contain"
+                                onError={(e) => {
+                                    e.target.style.display = 'none';
+                                }}
+                            />
+                            <div>
+                                <h1 className="text-base md:text-lg font-black text-tea-800">انجمن صنایع چای استان تهران</h1>
+                                <p className="text-[11px] md:text-xs text-goldTea-700 font-bold">گزارش عملکرد منتهی به اسفند {toPersianDigits(1404)}</p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            <button 
+                                onClick={() => setShowSlideMap(!showSlideMap)}
+                                className="px-4 py-2 rounded-2xl bg-tea-500 text-white text-xs md:text-sm font-black hover:bg-tea-800 transition-all flex items-center gap-2 shadow-sm"
+                                title="نمایش نقشه ارائه"
+                            >
+                                <i className="fa-solid fa-list-ul"></i>
+                                <span className="hidden md:inline">فهرست اسلایدها</span>
+                            </button>
+
+                            <button 
+                                onClick={toggleFullscreen}
+                                className="p-2.5 rounded-2xl bg-goldTea-100/80 text-goldTea-700 hover:bg-goldTea-500 hover:text-white transition-all border border-goldTea-500/30"
+                                title="تمام صفحه"
+                            >
+                                <i className={`fa-solid ${isFullscreen ? 'fa-compress' : 'fa-expand'} text-base`}></i>
+                            </button>
+                        </div>
+                    </header>
+
+                    {/* SLIDE NAVIGATION OVERVIEW (SIDEBAR MAP) */}
+                    {showSlideMap && (
+                        <div className="fixed top-20 right-0 h-[calc(100vh-80px)] w-80 bg-white border-l-4 border-goldTea-500 shadow-2xl z-[60] p-6 overflow-y-auto no-scrollbar">
+                            <h3 className="font-black text-sm text-tea-800 uppercase tracking-wider mb-4 border-b-2 border-tea-100 pb-2 flex justify-between items-center">
+                                <span>فهرست اسلایدهای ارائه</span>
+                                <button onClick={() => setShowSlideMap(false)} className="text-tea-500 hover:text-red-600"><i className="fa-solid fa-times text-lg"></i></button>
+                            </h3>
+                            <div className="space-y-2">
+                                {slides.map((s, idx) => (
+                                    <button
+                                        key={s.id}
+                                        onClick={() => {
+                                            setCurrentSlide(idx);
+                                            setShowSlideMap(false);
+                                        }}
+                                        className={`w-full text-right p-3 rounded-2xl text-sm font-black transition-all duration-200 flex items-center gap-3 ${
+                                            currentSlide === idx 
+                                                ? 'bg-goldTea-500 text-white border-2 border-goldTea-600 shadow-md' 
+                                                : 'text-tea-800 hover:bg-tea-50 hover:text-tea-900 border border-transparent'
+                                        }`}
+                                    >
+                                        <span className="w-6 h-6 rounded-xl bg-tea-500 text-white flex items-center justify-center font-black text-xs">{toPersianDigits(idx + 1)}</span>
+                                        <span className="truncate">{s.title}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MAIN PRESENTATION PROJECTION VIEW */}
+                    <main 
+                        className="flex-grow flex items-center justify-center p-2 md:p-3 overflow-hidden"
+                        onTouchStart={handleTouchStart}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={handleTouchEnd}
+                    >
+                        {/* Slide Box - dynamically fitting content and constrained vertically to avoid scrolling */}
+                        <div className="w-full max-w-[95vw] xl:max-w-[92%] bg-white border-4 border-goldTea-500 rounded-[32px] p-4 md:p-8 shadow-2xl relative max-h-[calc(100vh-12rem)] flex flex-col justify-between overflow-hidden my-1">
+                            
+                            {/* Slide Watermark */}
+                            <div className="absolute right-[-8%] bottom-[-8%] text-goldTea-500/10 pointer-events-none select-none">
+                                <i className="fa-solid fa-leaf text-[220px] rotate-12"></i>
+                            </div>
+
+                            {/* Slide Header Indicator */}
+                            <div className="flex justify-between items-center border-b-2 border-tea-100 pb-3 mb-2 z-10 shrink-0">
+                                <span className="text-xs md:text-sm font-black text-goldTea-700 bg-goldTea-500/10 px-3 py-1.5 rounded-full border border-goldTea-500/20">
+                                    {slides[currentSlide].category}
+                                </span>
+                                <span className="text-xs md:text-sm text-tea-500 font-bold">
+                                    اسلاید {toPersianDigits(currentSlide + 1)} از {toPersianDigits(slides.length)}
+                                </span>
+                            </div>
+
+                            {/* Dynamic Slide Content (Fully fitted) */}
+                            <div key={currentSlide} className="flex-grow z-10 flex flex-col justify-center slide-fade-enter slide-fade-enter-active overflow-hidden">
+                                
+                                {}
+                                {currentSlide === 6 ? (
+                                    <div className="space-y-2 h-full flex flex-col justify-between overflow-hidden text-right">
+                                        
+                                        {/* Slide Title and Subject Badge */}
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b-2 border-goldTea-500/20 pb-1 shrink-0">
+                                            <div>
+                                                <h2 className="text-xl md:text-2xl font-[900] text-tea-800 flex items-center gap-2">
+                                                    <i className="fa-solid fa-sitemap text-goldTea-500"></i>
+                                                    <span>درخواست قرار گرفتن چای در سبد کالابرگ</span>
+                                                </h2>
+
+                                            </div>
+                                            <div className="bg-goldTea-500 text-white px-3 py-1 rounded-xl text-[11px] font-black shadow-md shrink-0 flex items-center gap-1">
+                                                <i className="fa-solid fa-bookmark"></i>
+                                                <span>موضوع نامه: درخواست قرار گرفتن چای در سبد کالابرگ</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Path Selectors - Large buttons */}
+                                        <div className="grid grid-cols-5 gap-2 shrink-0">
+                                            <button 
+                                                onClick={() => setSelectedVoucherPath('all')}
+                                                className={`px-3 py-2 rounded-xl text-xs md:text-sm font-black border transition-all ${selectedVoucherPath === 'all' ? 'bg-tea-800 text-white border-tea-800 shadow-md' : 'bg-white border-goldTea-500/20 text-tea-800 hover:bg-goldTea-100/40'}`}
+                                            >
+                                                نمای کلی جریان
+                                            </button>
+                                            <button 
+                                                onClick={() => setSelectedVoucherPath('vp')}
+                                                className={`px-3 py-2 rounded-xl text-xs md:text-sm font-black border transition-all ${selectedVoucherPath === 'vp' ? 'bg-red-700 text-white border-red-700 shadow-md' : 'bg-white border-goldTea-500/20 text-tea-800 hover:bg-red-50'}`}
+                                            >
+                                                {toPersianDigits(1)}. معاون اول
+                                            </button>
+                                            <button 
+                                                onClick={() => setSelectedVoucherPath('chamber')}
+                                                className={`px-3 py-2 rounded-xl text-xs md:text-sm font-black border transition-all ${selectedVoucherPath === 'chamber' ? 'bg-blue-700 text-white border-blue-700 shadow-md' : 'bg-white border-goldTea-500/20 text-tea-800 hover:bg-blue-50'}`}
+                                            >
+                                                {toPersianDigits(2)}. اتاق و کمیسیون
+                                            </button>
+                                            <button 
+                                                onClick={() => setSelectedVoucherPath('minister')}
+                                                className={`px-3 py-2 rounded-xl text-xs md:text-sm font-black border transition-all ${selectedVoucherPath === 'minister' ? 'bg-emerald-700 text-white border-emerald-700 shadow-md' : 'bg-white border-goldTea-500/20 text-tea-800 hover:bg-emerald-50'}`}
+                                            >
+                                                {toPersianDigits(3)}. وزیر جهاد
+                                            </button>
+                                            <button 
+                                                onClick={() => setSelectedVoucherPath('oral')}
+                                                className={`px-3 py-2 rounded-xl text-xs md:text-sm font-black border transition-all ${selectedVoucherPath === 'oral' ? 'bg-amber-600 text-white border-amber-600 shadow-md' : 'bg-white border-goldTea-500/20 text-tea-800 hover:bg-amber-50'}`}
+                                            >
+                                                {toPersianDigits(4)}. مذاکرات شفاهی
+                                            </button>
+                                        </div>
+
+                                        {/* Dynamic Flow Rendering Area - Expanded Texts */}
+                                        <div className="flex-grow bg-goldTea-100/20 rounded-2xl border border-goldTea-500/20 p-4 overflow-y-auto no-scrollbar flex flex-col justify-center">
+                                            
+                                            {/* ALL PATHS VIEW (Vastly enlarged font sizes) */}
+                                            {selectedVoucherPath === 'all' && (
+                                                <div className="grid grid-cols-4 gap-4 items-stretch h-full py-1 text-right">
+                                                    
+                                                    {/* PATH 1 (Red Theme) */}
+                                                    <div className="bg-red-50/50 border-2 border-red-200 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+                                                        <span className="text-xs md:text-sm font-black text-red-800 bg-red-100 px-3 py-1 rounded-lg inline-block w-fit mb-2">{toPersianDigits(1)}. معاون اول رئیس جمهور</span>
+                                                        <div className="space-y-3">
+                                                            <div className="p-3 bg-white border border-red-200 rounded-xl">
+                                                                <h5 className="font-black text-sm text-tea-800">{toPersianDigits(1)}. معاون اول رئیس‌جمهور</h5>
+                                                                <p className="text-xs text-zinc-600 font-bold mt-1">مکاتبه مستقیم دبیرخانه انجمن و ارجاع موضوع به وزارت جهاد</p>
+                                                            </div>
+                                                            <div className="text-center text-red-500 text-base"><i className="fa-solid fa-arrow-down-long"></i></div>
+                                                            <div className="p-3 bg-white border border-red-200 rounded-xl">
+                                                                <h5 className="font-black text-sm text-tea-800">{toPersianDigits(2)}. وزارت جهاد کشاورزی</h5>
+                                                                <p className="text-xs text-zinc-600 font-bold mt-1">بررسی شرایط توزیع و توازن زنجیره در کالابرگ</p>
+                                                            </div>
+                                                        </div>
+                                                        <span className="text-xs font-black text-red-700 border-2 border-red-300 bg-red-100/50 px-2 py-1 rounded-xl mt-4 text-center block">مسیر یک</span>
+                                                    </div>
+
+                                                    {/* PATH 2 (Green Theme) */}
+                                                    <div className="bg-emerald-50/50 border-2 border-emerald-200 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+                                                        <span className="text-xs md:text-sm font-black text-emerald-800 bg-emerald-100 px-3 py-1 rounded-lg inline-block w-fit mb-2">{toPersianDigits(2)}. وزارت جهاد کشاورزی</span>
+                                                        <div className="space-y-3">
+                                                            <div className="p-3 bg-white border border-emerald-200 rounded-xl">
+                                                                <h5 className="font-black text-sm text-tea-800">معاونت توسعه بازرگانی</h5>
+                                                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                                                    <div className="bg-red-50 p-1.5 rounded border border-red-200 text-xs">
+                                                                        <span className="font-black block">دکتر هومن فتحی</span>
+                                                                        <span className="text-[10px] text-red-700 font-black"><i className="fa-solid fa-ban"></i> مخالفت کرد</span>
+                                                                    </div>
+                                                                    <div className="bg-emerald-50 p-1.5 rounded border border-emerald-200 text-xs">
+                                                                        <span className="font-black block">دکتر محمدرضا طلایی</span>
+                                                                        <span className="text-[10px] text-emerald-700 font-black"><i className="fa-solid fa-check"></i> قول پیگیری داد</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-center text-emerald-500 text-base"><i className="fa-solid fa-arrow-down-long"></i></div>
+                                                            <div className="p-3 bg-white border border-emerald-200 rounded-xl">
+                                                                <h5 className="font-black text-sm text-tea-800">بازرگانی داخلی دکتر حسنی‌مقدم</h5>
+                                                                <p className="text-xs text-zinc-600 font-bold mt-1">در حال پیگیری</p>
+                                                            </div>
+                                                        </div>
+                                                        <span className="text-xs font-black text-emerald-700 border-2 border-emerald-300 bg-emerald-100/50 px-2 py-1 rounded-xl mt-4 text-center block">مسیر دو</span>
+                                                    </div>
+
+                                                    {/* PATH 3 (Blue Theme) */}
+                                                    <div className="bg-blue-50/50 border-2 border-blue-200 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+                                                        <span className="text-xs md:text-sm font-black text-blue-800 bg-blue-100 px-3 py-1 rounded-lg inline-block w-fit mb-2">{toPersianDigits(3)}. اتاق بازرگانی تهران</span>
+                                                        <div className="space-y-3">
+                                                            <div className="p-3 bg-white border border-blue-200 rounded-xl">
+                                                                <h5 className="font-black text-sm text-tea-800">رئیس اتاق (دکتر نجفی‌عرب)</h5>
+                                                                <p className="text-xs text-zinc-600 font-bold mt-1">ارسال موازی نامه حمایتی به وزیر جهاد کشاورزی</p>
+                                                            </div>
+                                                            <div className="text-center text-blue-500 text-base"><i className="fa-solid fa-arrow-down-long"></i></div>
+                                                            <div className="grid grid-cols-2 gap-2">
+                                                                <div className="p-2 bg-white border border-blue-200 rounded-xl text-xs">
+                                                                    <span className="font-black block text-tea-800">کمیسیون کشاورزی</span>
+                                                                    <span className="text-[10px] text-blue-700 font-bold">⬅ ارجاع به کارشناس</span>
+                                                                </div>
+                                                                <div className="p-2 bg-white border border-blue-200 rounded-xl text-xs">
+                                                                    <span className="font-black block text-tea-800">وزیر جهاد کشاورزی</span>
+                                                                    <span className="text-[10px] text-emerald-700 font-bold">⬅ ارجاع به بازرگانی</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <span className="text-xs font-black text-blue-700 border-2 border-blue-300 bg-blue-100/50 px-2 py-1 rounded-xl mt-4 text-center block">مسیر سه</span>
+                                                    </div>
+
+                                                    {/* PATH 4 (Amber Theme) */}
+                                                    <div className="bg-amber-50/50 border-2 border-amber-200 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+                                                        <span className="text-xs md:text-sm font-black text-amber-800 bg-amber-100 px-3 py-1 rounded-lg inline-block w-fit mb-2">{toPersianDigits(4)}. مذاکرات رفاهی وزارت کار</span>
+                                                        <div className="space-y-3">
+                                                            <div className="p-3 bg-white border border-amber-200 rounded-xl">
+                                                                <h5 className="font-black text-sm text-tea-800">معاونت رفاهی وزارت کار</h5>
+                                                                <p className="text-xs text-zinc-600 font-bold mt-1">رایزنی مستقیم دبیرخانه و همفکری با دکتر انصاری</p>
+                                                            </div>
+                                                            <div className="text-center text-amber-500 text-base"><i className="fa-solid fa-arrow-down-long"></i></div>
+                                                            <div className="p-3 bg-white border border-amber-200 rounded-xl">
+                                                                <h5 className="font-black text-sm text-tea-800">پرونده چای در کالابرگ</h5>
+                                                                <p className="text-xs text-zinc-600 font-bold mt-1">پرونده فعلا در وزارت جهاد کشاورزی در دست بررسی و توسط انجمن در حال پیگیری است.</p>
+                                                            </div>
+                                                        </div>
+                                                        <span className="text-xs font-black text-amber-700 border-2 border-amber-300 bg-amber-100/50 px-2 py-1 rounded-xl mt-4 text-center block">مسیر چهار</span>
+                                                    </div>
+
+                                                </div>
+                                            )}
+
+                                            {/* SPECIFIC SINGLE PATH DETAILED VIEWS */}
+                                            {selectedVoucherPath === 'vp' && (
+                                                <div className="bg-white p-6 rounded-2xl border-l-8 border-red-500 shadow-md space-y-4">
+                                                    <h4 className="font-black text-lg text-red-800"><i className="fa-solid fa-arrow-turn-down"></i> مسیر {toPersianDigits(1)}: معاون اول رئیس‌جمهور و وزارت جهاد کشاورزی</h4>
+                                                    <p className="text-sm md:text-base text-zinc-800 font-semibold leading-relaxed">ارسال لایحه و نامه مکتوب رسمی انجمن به دفتر معاون اول رئیس‌جمهور (دکتر عارف) جهت ارجاع موضوع به کمیسیون‌های مربوطه.</p>
+                                                    <div className="grid grid-cols-2 gap-6 pt-2">
+                                                        <div className="p-4 bg-red-50/50 rounded-xl border border-red-100">
+                                                            <span className="font-black block text-sm text-tea-800">ارجاع مستقیم به وزارت جهاد کشاورزی</span>
+                                                            <p className="text-xs md:text-sm text-zinc-600 mt-2 leading-relaxed">نامه با دستور مستقیم از سوی دفتر معاون اول به وزارت جهاد کشاورزی ارجاع و در کارتابل بررسی تخصصی قرار گرفته است.</p>
+                                                        </div>
+                                                        <div className="p-4 bg-red-50/50 rounded-xl border border-red-100">
+                                                            <span className="font-black block text-sm text-tea-800">بررسی توازن بازار زنجیره چای</span>
+                                                            <p className="text-xs md:text-sm text-zinc-600 mt-2 leading-relaxed">ارزیابی میزان نیاز کشور به چای خشک و سنجش حجم مالیات‌ها به همراه بررسی نقدینگی فعال زنجیره.</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {selectedVoucherPath === 'chamber' && (
+                                                <div className="bg-white p-6 rounded-2xl border-l-8 border-blue-500 shadow-md space-y-4">
+                                                    <h4 className="font-black text-lg text-blue-800"><i className="fa-solid fa-arrow-turn-down"></i> مسیر {toPersianDigits(2)}: اتاق بازرگانی تهران و کمیسیون کشاورزی مجلس</h4>
+                                                    <p className="text-sm md:text-base text-zinc-800 font-semibold leading-relaxed">ارسال موازی و قدرتمند نامه حمایتی اتاق بازرگانی تهران به امضای جناب دکتر نجفی‌عرب خطاب به وزیر جهاد کشاورزی جهت تسریع در فرآیند تصویب سبد کالابرگ.</p>
+                                                    <div className="grid grid-cols-2 gap-6 pt-2">
+                                                        <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+                                                            <span className="font-black block text-sm text-tea-800">کمیسیون کشاورزی مجلس (دکتر عسکری)</span>
+                                                            <p className="text-xs md:text-sm text-zinc-600 mt-2 leading-relaxed">طرح لایحه حمایتی در دستور جلسه کمیسیون و ارجاع تخصصی پرونده به کارشناسان مجلس شورای اسلامی.</p>
+                                                        </div>
+                                                        <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+                                                            <span className="font-black block text-sm text-tea-800">ارزیابی فنی اثرات اقتصادی سبد کالا</span>
+                                                            <p className="text-xs md:text-sm text-zinc-600 mt-2 leading-relaxed">پایش مستمر موازنه تجاری، تراز ارزی و گمرکی به همراه سنجش میزان تغییر در معیشت اقشار کم‌درآمد.</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {selectedVoucherPath === 'minister' && (
+                                                <div className="bg-white p-6 rounded-2xl border-l-8 border-emerald-500 shadow-md space-y-4">
+                                                    <h4 className="font-black text-lg text-emerald-800"><i className="fa-solid fa-arrow-turn-down"></i> مسیر {toPersianDigits(3)}: پیگیری مستقیم از وزیر جهاد کشاورزی</h4>
+                                                    <p className="text-sm md:text-base text-zinc-800 font-semibold leading-relaxed">ارسال درخواست اختصاصی و مکتوب انجمن به وزیر جهاد کشاورزی (دکتر نوری قزلچه) جهت روان‌سازی امور تخصیص ارزی و توزیعی چای خشک خارجی.</p>
+                                                    <div className="grid grid-cols-2 gap-6 pt-2">
+                                                        <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-100">
+                                                            <span className="font-black block text-sm text-tea-800">ارجاع به معاونت توسعه بازرگانی</span>
+                                                            <p className="text-xs md:text-sm text-zinc-600 mt-2 leading-relaxed">ارجاع پرونده از سوی دفتر وزیر محترم به مدیریت بازرگانی جهت پایش حجم واردات و برآورد دقیق کسری چای خشک.</p>
+                                                        </div>
+                                                        <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-100">
+                                                            <span className="font-black block text-sm text-tea-800">پیگیری دستور مستقیم دکتر طلایی</span>
+                                                            <p className="text-xs md:text-sm text-zinc-600 mt-2 leading-relaxed">تسریع فرآیند گمرکی و ابلاغ اصلاحیه‌های ارزی به منظور جلوگیری هوشمندانه از دپو شدن کالاها در بنادر کشور.</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {selectedVoucherPath === 'oral' && (
+                                                <div className="bg-white p-6 rounded-2xl border-l-8 border-amber-500 shadow-md space-y-4">
+                                                    <h4 className="font-black text-lg text-amber-800"><i className="fa-solid fa-arrow-turn-down"></i> مسیر {toPersianDigits(4)}: مذاکرات مستقیم شفاهی و پارلمانی دبیرخانه انجمن</h4>
+                                                    <p className="text-sm md:text-base text-zinc-800 font-semibold leading-relaxed">مذاکره حضوری و فشرده دبیرخانه با معاونت پارلمانی و رفاهی وزارت کار و رفاه اجتماعی به همراه رایزنی با دکتر انصاری.</p>
+                                                    <div className="grid grid-cols-2 gap-6 pt-2">
+                                                        <div className="p-4 bg-amber-50/50 rounded-xl border border-amber-100">
+                                                            <span className="font-black block text-sm text-tea-800">همکاری پارلمانی فعال انجمن</span>
+                                                            <p className="text-xs md:text-sm text-zinc-600 mt-2 leading-relaxed">رایزنی مداوم و مکتوب دبیرخانه انجمن با کمیسیون کشاورزی و معاونت رفاهی به منظور ایجاد وفاق کامل در مجمع سران.</p>
+                                                        </div>
+                                                        <div className="p-4 bg-amber-50/50 rounded-xl border border-amber-100">
+                                                            <span className="font-black block text-sm text-tea-800">وضعیت نهایی پرونده: در انتظار امضای وزیر</span>
+                                                            <p className="text-xs md:text-sm text-zinc-600 mt-2 leading-relaxed">پرونده هم‌اکنون مراحل اداری خود را طی کرده و صرفاً در انتظار امضای نهایی وزیر جهاد کشاورزی قرار دارد.</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                        </div>
+
+                                    </div>
+                                ) : currentSlide === 7 ? (
+                                    /* CUSTOM GRAPHICAL FLOW FOR SLIDE 8 (id: 7) - BRAND NEW IMPLEMENTATION FROM image_86907e.png */
+                                    <div className="space-y-2 h-full flex flex-col justify-between overflow-hidden text-right">
+                                        
+                                        {/* Slide Title and Subject Badge */}
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b-2 border-goldTea-500/20 pb-1 shrink-0">
+                                            <div>
+                                                <h2 className="text-xl md:text-2xl font-[900] text-tea-800 flex items-center gap-2">
+                                                    <i className="fa-solid fa-circle-nodes text-goldTea-500"></i>
+                                                    <span>درخواست رسیدگی فوری به مابه‌التفاوت نرخ ارزی و ریالی حاصل از حذف تالار اول و انتقال به تالار دوم</span>
+                                                </h2>
+                                               
+                                            </div>
+                                            <div className="bg-goldTea-500 text-white px-3 py-1 rounded-xl text-[11px] font-black shadow-md shrink-0 flex items-center gap-1 max-w-lg">
+                                                <i className="fa-solid fa-bookmark shrink-0"></i>
+                                                <span className="truncate" title="درخواست رسیدگی فوری به مابه‌التفاوت ارزی و ریالی حاصل از حذف کالا از اول و انتقال به تالار دوم">موضوع: درخواست رسیدگی به مابه‌التفاوت ارزی و ریالی تالار ۱ و ۲</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Path Selectors - Grid of 9 options including "All" */}
+                                        <div className="grid grid-cols-3 md:grid-cols-9 gap-1.5 shrink-0">
+                                            <button 
+                                                onClick={() => setSelectedVoucherPath8('all')}
+                                                className={`px-1.5 py-1.5 rounded-lg text-xs font-black border transition-all ${selectedVoucherPath8 === 'all' ? 'bg-tea-800 text-white border-tea-800 shadow' : 'bg-white border-goldTea-500/20 text-tea-800 hover:bg-goldTea-100/40'}`}
+                                            >
+                                                نمای کلی
+                                            </button>
+                                            <button 
+                                                onClick={() => setSelectedVoucherPath8('minister')}
+                                                className={`px-1.5 py-1.5 rounded-lg text-xs font-black border transition-all ${selectedVoucherPath8 === 'minister' ? 'bg-red-700 text-white border-red-700 shadow' : 'bg-white border-goldTea-500/20 text-tea-800 hover:bg-red-50'}`}
+                                            >
+                                                {toPersianDigits(1)}. وزیر جهاد
+                                            </button>
+                                            <button 
+                                                onClick={() => setSelectedVoucherPath8('commission')}
+                                                className={`px-1.5 py-1.5 rounded-lg text-xs font-black border transition-all ${selectedVoucherPath8 === 'commission' ? 'bg-blue-700 text-white border-blue-700 shadow' : 'bg-white border-goldTea-500/20 text-tea-800 hover:bg-blue-50'}`}
+                                            >
+                                                {toPersianDigits(2)}. ک. کشاورزی
+                                            </button>
+                                            <button 
+                                                onClick={() => setSelectedVoucherPath8('four_associations')}
+                                                className={`px-1.5 py-1.5 rounded-lg text-xs font-black border transition-all ${selectedVoucherPath8 === 'four_associations' ? 'bg-purple-700 text-white border-purple-700 shadow' : 'bg-white border-goldTea-500/20 text-tea-800 hover:bg-purple-50'}`}
+                                            >
+                                                {toPersianDigits(3)}. نامه ۴ انجمن
+                                            </button>
+                                            <button 
+                                                onClick={() => setSelectedVoucherPath8('chamber_dialogue')}
+                                                className={`px-1.5 py-1.5 rounded-lg text-xs font-black border transition-all ${selectedVoucherPath8 === 'chamber_dialogue' ? 'bg-amber-600 text-white border-amber-600 shadow' : 'bg-white border-goldTea-500/20 text-tea-800 hover:bg-amber-50'}`}
+                                            >
+                                                {toPersianDigits(4)}. اتاق (شورای گفتگو)
+                                            </button>
+                                            <button 
+                                                onClick={() => setSelectedVoucherPath8('food_industry')}
+                                                className={`px-1.5 py-1.5 rounded-lg text-xs font-black border transition-all ${selectedVoucherPath8 === 'food_industry' ? 'bg-teal-700 text-white border-teal-700 shadow' : 'bg-white border-goldTea-500/20 text-tea-800 hover:bg-teal-50'}`}
+                                            >
+                                                {toPersianDigits(5)}. ک. صنایع غذایی
+                                            </button>
+                                            <button 
+                                                onClick={() => setSelectedVoucherPath8('central_bank')}
+                                                className={`px-1.5 py-1.5 rounded-lg text-xs font-black border transition-all ${selectedVoucherPath8 === 'central_bank' ? 'bg-indigo-700 text-white border-indigo-700 shadow' : 'bg-white border-goldTea-500/20 text-tea-800 hover:bg-indigo-50'}`}
+                                            >
+                                                {toPersianDigits(6)}. بانک مرکزی
+                                            </button>
+                                            <button 
+                                                onClick={() => setSelectedVoucherPath8('import_fed')}
+                                                className={`px-1.5 py-1.5 rounded-lg text-xs font-black border transition-all ${selectedVoucherPath8 === 'import_fed' ? 'bg-slate-700 text-white border-slate-700 shadow font-black border-slate-700' : 'bg-white border-goldTea-500/20 text-tea-800 hover:bg-slate-50'}`}
+                                            >
+                                                {toPersianDigits(7)}. فدراسیون واردات
+                                            </button>
+                                            <button 
+                                                onClick={() => setSelectedVoucherPath8('chamber_president')}
+                                                className={`px-1.5 py-1.5 rounded-lg text-xs font-black border transition-all ${selectedVoucherPath8 === 'chamber_president' ? 'bg-emerald-700 text-white border-emerald-700 shadow' : 'bg-white border-goldTea-500/20 text-tea-800 hover:bg-emerald-50'}`}
+                                            >
+                                                {toPersianDigits(8)}. اتاق (دکتر نجفی‌عرب)
+                                            </button>
+                                        </div>
+
+                                        {/* Dynamic Flow Rendering Area for Slide 8 */}
+                                        <div className="flex-grow bg-goldTea-100/20 rounded-2xl border border-goldTea-500/20 p-3 overflow-y-auto no-scrollbar flex flex-col justify-center">
+                                            
+                                            {/* ALL PATHS GRID VIEW (8 paths from image_86907e.png) */}
+                                            {selectedVoucherPath8 === 'all' && (
+                                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-stretch h-full py-1 text-right overflow-y-auto no-scrollbar">
+                                                    
+                                                    {/* Path 1 */}
+                                                    <div className="bg-red-50/50 border border-red-200 rounded-xl p-3 flex flex-col justify-between shadow-sm">
+                                                        <span className="text-[11px] font-black text-red-800 bg-red-100 px-2 py-0.5 rounded-md inline-block w-fit mb-1.5">{toPersianDigits(1)}. وزیر جهاد</span>
+                                                        <div className="space-y-1 text-xs">
+                                                            <h5 className="font-bold text-tea-800">دکتر نوری قزلچه</h5>
+                                                            <p className="text-[11px] text-zinc-600">ارجاع به توسعه بازرگانی ⬅ دکتر آذین (دفتر تدوین مقررات)</p>
+                                                        </div>
+                                                        <span className="text-[10px] font-black text-red-700 border border-red-200 bg-white px-1.5 py-0.5 rounded-md mt-2 text-center block"><i className="fa-solid fa-hourglass-half"></i> در حال پیگیری</span>
+                                                    </div>
+
+                                                    {/* Path 2 */}
+                                                    <div className="bg-blue-50/50 border border-blue-200 rounded-xl p-3 flex flex-col justify-between shadow-sm">
+                                                        <span className="text-[11px] font-black text-blue-800 bg-blue-100 px-2 py-0.5 rounded-md inline-block w-fit mb-1.5">{toPersianDigits(2)}. ک. کشاورزی مجلس</span>
+                                                        <div className="space-y-1 text-xs">
+                                                            <h5 className="font-bold text-tea-800">رئیس کمیسیون مجلس</h5>
+                                                            <p className="text-[11px] text-zinc-600">ارجاع مستقیم به کارتابل دکتر عسکری</p>
+                                                        </div>
+                                                        <span className="text-[10px] font-black text-blue-700 border border-blue-200 bg-white px-1.5 py-0.5 rounded-md mt-2 text-center block"><i className="fa-solid fa-circle-check"></i> در حال پیگیری</span>
+                                                    </div>
+
+                                                    {/* Path 3 */}
+                                                    <div className="bg-purple-50/50 border border-purple-200 rounded-xl p-3 flex flex-col justify-between shadow-sm">
+                                                        <span className="text-[11px] font-black text-purple-800 bg-purple-100 px-2 py-0.5 rounded-md inline-block w-fit mb-1.5">{toPersianDigits(3)}. نامه جمعی ۴ انجمن</span>
+                                                        <div className="space-y-1 text-xs">
+                                                            <h5 className="font-bold text-tea-800">دکتر عارف (کمیسیون سران)</h5>
+                                                            <p className="text-[11px] text-zinc-600">درخواست طرح و تصویب در کمیسیون مجمع سران</p>
+                                                        </div>
+                                                        <span className="text-[10px] font-black text-purple-700 border border-purple-200 bg-white px-1.5 py-0.5 rounded-md mt-2 text-center block"><i className="fa-solid fa-clock"></i> در حال پیگیری</span>
+                                                    </div>
+
+                                                    {/* Path 4 */}
+                                                    <div className="bg-amber-50/50 border border-amber-200 rounded-xl p-3 flex flex-col justify-between shadow-sm">
+                                                        <span className="text-[11px] font-black text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md inline-block w-fit mb-1.5">{toPersianDigits(4)}. اتاق (شورای گفتگو)</span>
+                                                        <div className="space-y-1 text-xs">
+                                                            <h5 className="font-bold text-tea-800">شورای گفتگوی بخش خصوصی و دولت</h5>
+                                                            <p className="text-[11px] text-zinc-600">پیگیری مطالبات ارزی انجمن توسط دکتر حاجی‌پور</p>
+                                                        </div>
+                                                        <span className="text-[10px] font-black text-amber-700 border border-amber-200 bg-white px-1.5 py-0.5 rounded-md mt-2 text-center block"><i className="fa-solid fa-spinner"></i> در حال پیگیری</span>
+                                                    </div>
+
+                                                    {/* Path 5 */}
+                                                    <div className="bg-teal-50/50 border border-teal-200 rounded-xl p-3 flex flex-col justify-between shadow-sm">
+                                                        <span className="text-[11px] font-black text-teal-800 bg-teal-100 px-2 py-0.5 rounded-md inline-block w-fit mb-1.5">{toPersianDigits(5)}. ک. صنایع غذایی</span>
+                                                        <div className="space-y-1 text-xs">
+                                                            <h5 className="font-bold text-tea-800">کمیسیون صنایع غذایی اتاق ایران</h5>
+                                                            <p className="text-[11px] text-zinc-600">طرح در کمیسیون ⬅ ارجاع به کمیسیون ماده ۱۳ دکتر عارف</p>
+                                                        </div>
+                                                        <span className="text-[10px] font-black text-teal-700 border border-teal-200 bg-white px-1.5 py-0.5 rounded-md mt-2 text-center block"><i className="fa-solid fa-hourglass-half"></i> در حال پیگیری</span>
+                                                    </div>
+
+                                                    {/* Path 6 */}
+                                                    <div className="bg-indigo-50/50 border border-indigo-200 rounded-xl p-3 flex flex-col justify-between shadow-sm">
+                                                        <span className="text-[11px] font-black text-indigo-800 bg-indigo-100 px-2 py-0.5 rounded-md inline-block w-fit mb-1.5">{toPersianDigits(6)}. بانک مرکزی</span>
+                                                        <div className="space-y-1 text-xs">
+                                                            <h5 className="font-bold text-tea-800">دکتر همتی / دکتر رنجبر</h5>
+                                                            <p className="text-[11px] text-zinc-600">ارجاع به مدیرکل دفتر مقررات و تالارهای تجاری</p>
+                                                        </div>
+                                                        <span className="text-[10px] font-black text-indigo-700 border border-indigo-200 bg-white px-1.5 py-0.5 rounded-md mt-2 text-center block"><i className="fa-solid fa-circle-check"></i> در حال پیگیری</span>
+                                                    </div>
+
+                                                    {/* Path 7 */}
+                                                    <div className="bg-slate-50/50 border border-slate-200 rounded-xl p-3 flex flex-col justify-between shadow-sm">
+                                                        <span className="text-[11px] font-black text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md inline-block w-fit mb-1.5">{toPersianDigits(7)}. فدراسیون واردات</span>
+                                                        <div className="space-y-1 text-xs">
+                                                            <h5 className="font-bold text-tea-800">فدراسیون واردات ایران</h5>
+                                                            <p className="text-[11px] text-zinc-600">تسلیم کلیه مدارک، مستندات و ترازنامه‌های مالی انجمن</p>
+                                                        </div>
+                                                        <span className="text-[10px] font-black text-slate-700 border border-slate-200 bg-white px-1.5 py-0.5 rounded-md mt-2 text-center block"><i className="fa-solid fa-spinner"></i> در حال پیگیری</span>
+                                                    </div>
+
+                                                    {/* Path 8 */}
+                                                    <div className="bg-emerald-50/50 border border-emerald-200 rounded-xl p-3 flex flex-col justify-between shadow-sm">
+                                                        <span className="text-[11px] font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md inline-block w-fit mb-1.5">{toPersianDigits(8)}. اتاق (دکتر نجفی‌عرب)</span>
+                                                        <div className="space-y-1 text-xs">
+                                                            <h5 className="font-bold text-tea-800"> دکتر نجفی‌عرب (رئیس اتاق)</h5>
+                                                            <p className="text-[11px] text-zinc-600">ارجاع موازی نامه به وزیر جهاد کشاورزی</p>
+                                                        </div>
+                                                        <span className="text-[10px] font-black text-emerald-700 border border-emerald-200 bg-white px-1.5 py-0.5 rounded-md mt-2 text-center block"><i className="fa-solid fa-circle-check"></i> در حال پیگیری</span>
+                                                    </div>
+
+                                                </div>
+                                            )}
+
+                                            {/* DETAILED VIEWS FOR INDIVIDUAL PATHS (Slide 8) */}
+                                            {selectedVoucherPath8 === 'minister' && (
+                                                <div className="bg-white p-6 rounded-2xl border-l-8 border-red-500 shadow-md space-y-3">
+                                                    <h4 className="font-black text-lg text-red-800">مسیر {toPersianDigits(1)}: وزیر محترم جهاد کشاورزی (دکتر نوری قزلچه)</h4>
+                                                    <p className="text-sm md:text-base text-zinc-800 font-semibold leading-relaxed">ارسال مستقیم نامه درخواست رسیدگی به مابه‌التفاوت ارزی و ریالی تالار ۱ و ۲ حاصل از انتقال چای به تالار دوم.</p>
+                                                    <div className="p-4 bg-red-50/50 rounded-xl border border-red-100">
+                                                        <span className="font-bold text-sm block">ارجاع به معاونت توسعه بازرگانی ⬅ دکتر آذین (دفتر تدوین مقررات) ⬅ در حال پیگیری هستند.</span>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {selectedVoucherPath8 === 'commission' && (
+                                                <div className="bg-white p-6 rounded-2xl border-l-8 border-blue-500 shadow-md space-y-3">
+                                                    <h4 className="font-black text-lg text-blue-800">مسیر {toPersianDigits(2)}: رئیس کمیسیون کشاورزی مجلس (دکتر عسکری)</h4>
+                                                    <p className="text-sm md:text-base text-zinc-800 font-semibold leading-relaxed">انتقال مستقیم شکواییه انجمن چای پیرامون حذف مابه‌التفاوت ارز تالار اول به مجلس شورای اسلامی.</p>
+                                                    <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+                                                        <span className="font-bold text-sm block">ارجاع تخصصی به دکتر عسکری جهت بازنگری قوانین زنجیره تامین چای و موازنه ارزی.</span>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {selectedVoucherPath8 === 'four_associations' && (
+                                                <div className="bg-white p-6 rounded-2xl border-l-8 border-purple-500 shadow-md space-y-3">
+                                                    <h4 className="font-black text-lg text-purple-800">مسیر {toPersianDigits(3)}: نامه جمعی ۴ انجمن بزرگ صنایع غذایی و چای به دکتر عارف</h4>
+                                                    <p className="text-sm md:text-base text-zinc-800 font-semibold leading-relaxed">همگرایی بی‌سابقه انجمن‌های همسو جهت تاثیرگذاری مستقیم بر فرآیند تصمیم‌گیری حاکمیتی.</p>
+                                                    <div className="p-4 bg-purple-50/50 rounded-xl border border-purple-100">
+                                                        <span className="font-bold text-sm block">درخواست طرح موضوع مابه‌التفاوت در مجمع سران سه قوه یا کمیسیون ماده ۱۳ ⬅ در انتظار صدور مصوبه.</span>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {selectedVoucherPath8 === 'chamber_dialogue' && (
+                                                <div className="bg-white p-6 rounded-2xl border-l-8 border-amber-600 shadow-md space-y-3">
+                                                    <h4 className="font-black text-lg text-amber-700">مسیر {toPersianDigits(4)}: نامه به اتاق بازرگانی تهران (شورای گفتگوی دولت و بخش خصوصی)</h4>
+                                                    <p className="text-sm md:text-base text-zinc-800 font-semibold leading-relaxed">استفاده از ظرفیت‌های قانونی شورای گفتگو جهت حل موانع انتقال تالارهای ارزی چای خشک.</p>
+                                                    <div className="p-4 bg-amber-50/50 rounded-xl border border-amber-100">
+                                                        <span className="font-bold text-sm block">ارجاع پرونده به جناب دکتر حاجی‌پور جهت پیگیری مکتوب و طرح در کارگروه ارزی شورا ⬅ در حال پیگیری.</span>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {selectedVoucherPath8 === 'food_industry' && (
+                                                <div className="bg-white p-6 rounded-2xl border-l-8 border-teal-500 shadow-md space-y-3">
+                                                    <h4 className="font-black text-lg text-teal-800">مسیر {toPersianDigits(5)}: کمیسیون صنایع غذایی اتاق ایران</h4>
+                                                    <p className="text-sm md:text-base text-zinc-800 font-semibold leading-relaxed">طرح موضوع فوریت‌های تالار ارزی در کمیسیون صنایع غذایی به عنوان مرجع عالی مشورتی انجمن‌ها.</p>
+                                                    <div className="p-4 bg-teal-50/50 rounded-xl border border-teal-100">
+                                                        <span className="font-bold text-sm block">طرح موفق در کمیسیون ⬅ ارجاع رسمی به کمیسیون ماده ۱۳ دفتر دکتر عارف ⬅ در حال پیگیری.</span>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {selectedVoucherPath8 === 'central_bank' && (
+                                                <div className="bg-white p-6 rounded-2xl border-l-8 border-indigo-500 shadow-md space-y-3">
+                                                    <h4 className="font-black text-lg text-indigo-800">مسیر {toPersianDigits(6)}: پیگیری مستقیم از بانک مرکزی جمهوری اسلامی ایران</h4>
+                                                    <p className="text-sm md:text-base text-zinc-800 font-semibold leading-relaxed">مکاتبه مستقیم با ریاست کل بانک مرکزی جهت روان‌سازی جریان تامین ریالی مابه‌التفاوت ارز انجمن چای.</p>
+                                                    <div className="p-4 bg-indigo-50/50 rounded-xl border border-indigo-100">
+                                                        <span className="font-bold text-sm block">ارسال نامه به دکتر همتی ⬅ ارجاع پرونده به دکتر رنجبر ⬅ ابلاغ به مدیرکل دفتر مقررات ارزی بانک.</span>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {selectedVoucherPath8 === 'import_fed' && (
+                                                <div className="bg-white p-6 rounded-2xl border-l-8 border-slate-500 shadow-md space-y-3">
+                                                    <h4 className="font-black text-lg text-slate-800">مسیر {toPersianDigits(7)}: نامه حمایتی به فدراسیون واردات ایران</h4>
+                                                    <p className="text-sm md:text-base text-zinc-800 font-semibold leading-relaxed">تجهیز پرونده انجمن به مدارک، مستندات و ادله‌های آماری معتبر بازار جهانی و داخلی چای خشک.</p>
+                                                    <div className="p-4 bg-slate-50/50 rounded-xl border border-slate-100">
+                                                        <span className="font-bold text-sm block">تسلیم کلیه مدارک و مستندات مستدل مالی و فاکتورهای ترخیص انجمن ⬅ در حال پیگیری می‌باشد.</span>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {selectedVoucherPath8 === 'chamber_president' && (
+                                                <div className="bg-white p-6 rounded-2xl border-l-8 border-emerald-500 shadow-md space-y-3">
+                                                    <h4 className="font-black text-lg text-emerald-800">مسیر {toPersianDigits(8)}: رئیس اتاق بازرگانی تهران ( دکتر نجفی‌عرب)</h4>
+                                                    <p className="text-sm md:text-base text-zinc-800 font-semibold leading-relaxed">استفاده از نفوذ عالی بخش خصوصی جهت تسریع بوروکراسی اداری مابه‌التفاوت نرخ ارز انجمن.</p>
+                                                    <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-100">
+                                                        <span className="font-bold text-sm block">مکاتبه دکتر نجفی‌عرب با وزارت جهاد ⬅ ارجاع مجدد مستقیم به وزیر جهاد کشاورزی جهت پیگیری نهایی.</span>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                        </div>
+
+                                    </div>
+                                ) : currentSlide === 8 ? (
+                                    <div className="space-y-3 h-full flex flex-col justify-between overflow-hidden text-right">
+                                        
+                                        {/* Header and Toggle of Two Distinct Topics */}
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-goldTea-500/20 pb-2 shrink-0">
+                                            <div>
+                                                <h2 className="text-xl md:text-2xl font-[900] text-tea-800 flex items-center gap-2">
+                                                    <i className="fa-solid fa-globe text-goldTea-500"></i>
+                                                    <span>پیگیری‌های فرامرزی: واردات چای کنیا و تهاتر سیلان</span>
+                                                </h2>
+                                            </div>
+                                            {/* Beautiful Projector Switcher Tabs */}
+                                            <div className="flex gap-2 bg-tea-100/50 p-1 rounded-2xl border border-goldTea-500/20">
+                                                <button 
+                                                    onClick={() => {
+                                                        setActiveSlide9Topic('kenya');
+                                                        setSelectedKenyaPath('all');
+                                                    }}
+                                                    className={`px-4 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${activeSlide9Topic === 'kenya' ? 'bg-tea-500 text-white shadow' : 'bg-white text-tea-800 hover:bg-goldTea-100/40 border border-goldTea-500/20'}`}
+                                                >
+                                                    <i className={`fa-solid fa-earth-africa ${activeSlide9Topic === 'kenya' ? 'text-white' : 'text-tea-500'}`}></i>
+                                                    <span>{toPersianDigits(1)}. واردات چای کنیا</span>
+                                                </button>
+                                                <button 
+                                                    onClick={() => setActiveSlide9Topic('ceylon')}
+                                                    className={`px-4 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${activeSlide9Topic === 'ceylon' ? 'bg-tea-500 text-white shadow' : 'bg-white text-tea-800 hover:bg-goldTea-100/40 border border-goldTea-500/20'}`}
+                                                >
+                                                    <i className={`fa-solid fa-earth-asia ${activeSlide9Topic === 'ceylon' ? 'text-white' : 'text-goldTea-600'}`}></i>
+                                                    <span>{toPersianDigits(2)}. تهاتر چای سیلان</span>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* TOPIC 1: KENYA TEA IMPORT (Active) */}
+                                        {activeSlide9Topic === 'kenya' && (
+                                            <div className="flex-grow flex flex-col justify-between overflow-hidden space-y-2">
+                                                
+                                                {/* Subject badge and Path switcher for Kenya */}
+                                                <div className="flex flex-wrap items-center justify-between gap-2 shrink-0">
+                                                    <span className="bg-red-500 text-white px-3 py-1 rounded-xl text-[11px] font-black shadow-sm">
+                                                        موضوع اول: درخواست رفع محدودیت جهت واردات چای از کشور کنیا
+                                                    </span>
+                                                    <div className="flex gap-1.5">
+                                                        <button 
+                                                            onClick={() => setSelectedKenyaPath('all')}
+                                                            className={`px-2.5 py-1 rounded-lg text-xs font-black border ${selectedKenyaPath === 'all' ? 'bg-tea-800 text-white' : 'bg-white text-tea-800'}`}
+                                                        >
+                                                            نمای جامع
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => setSelectedKenyaPath('path1')}
+                                                            className={`px-2.5 py-1 rounded-lg text-xs font-black border ${selectedKenyaPath === 'path1' ? 'bg-teal-700 text-white' : 'bg-white text-tea-800'}`}
+                                                        >
+                                                            مسیر {toPersianDigits(1)} (تدوین مقررات)
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => setSelectedKenyaPath('path2')}
+                                                            className={`px-2.5 py-1 rounded-lg text-xs font-black border ${selectedKenyaPath === 'path2' ? 'bg-purple-700 text-white' : 'bg-white text-tea-800'}`}
+                                                        >
+                                                            مسیر {toPersianDigits(2)} (مراجعات حضوری)
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => setSelectedKenyaPath('path3')}
+                                                            className={`px-2.5 py-1 rounded-lg text-xs font-black border ${selectedKenyaPath === 'path3' ? 'bg-indigo-700 text-white' : 'bg-white text-tea-800'}`}
+                                                        >
+                                                            مسیر {toPersianDigits(3)} (پیگیری گمرکی)
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => setSelectedKenyaPath('path4')}
+                                                            className={`px-2.5 py-1 rounded-lg text-xs font-black border ${selectedKenyaPath === 'path4' ? 'bg-rose-700 text-white' : 'bg-white text-tea-800'}`}
+                                                        >
+                                                            مسیر {toPersianDigits(4)} (رئیس سازمان چای)
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {/* Flow diagram rendering area */}
+                                                <div className="flex-grow bg-goldTea-100/10 rounded-2xl border border-goldTea-500/20 p-4 overflow-y-auto no-scrollbar flex flex-col justify-center">
+                                                    
+                                                    {/* Kenya All Paths Grid (Now beautifully structured as tree paths with custom colors & vertical flows) */}
+                                                    {selectedKenyaPath === 'all' && (
+                                                        <div className="grid grid-cols-4 gap-4 items-stretch h-full py-1 text-right">
+                                                            
+                                                            {/* Path 1: تدوین مقررات (Teal Theme) */}
+                                                            <div className="bg-teal-50/50 border-2 border-teal-200 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+                                                                <span className="text-xs font-black text-teal-800 bg-teal-100 px-3 py-1 rounded-lg inline-block w-fit mb-2">{toPersianDigits(1)}. تدوین مقررات</span>
+                                                                <div className="space-y-2 flex-grow flex flex-col justify-center">
+                                                                    <div className="p-2 bg-white border border-teal-200 rounded-xl">
+                                                                        <h5 className="font-black text-[11px] text-teal-900">وزارت جهاد (دکتر فتحی)</h5>
+                                                                        <p className="text-[10px] text-zinc-500 font-bold">ارجاع اولیه به دفتر مقررات</p>
+                                                                    </div>
+                                                                    <div className="text-center text-teal-500 text-xs"><i className="fa-solid fa-arrow-down-long"></i></div>
+                                                                    <div className="p-2 bg-white border border-teal-200 rounded-xl">
+                                                                        <h5 className="font-black text-[11px] text-teal-900">دفتر تدوین مقررات (دکتر آذین)</h5>
+                                                                        <p className="text-[10px] text-zinc-500 font-bold">ارجاع به معاونت دفتر تدوین (سرکار خانم نوحی - معاون) </p>
+                                                                    </div>
+                                                                <span className="text-[10px] font-black text-amber-700 border-2 border-amber-200 bg-amber-100/60 px-2 py-0.5 rounded-xl mt-3 text-center block">
+                                                                    <i className="fa-solid fa-ban ml-1 text-[9px]"></i>
+                                                                    عدم پیگیری نهادهای بالادستی
+                                                                </span>
+                                                                </div>
+
+                                                            </div>
+
+                                                            {/* Path 2: مراجعات حضوری (Purple Theme) */}
+                                                            <div className="bg-purple-50/50 border-2 border-purple-200 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+                                                                <span className="text-xs font-black text-purple-800 bg-purple-100 px-3 py-1 rounded-lg inline-block w-fit mb-2">{toPersianDigits(2)}. مراجعات حضوری</span>
+                                                                <div className="space-y-2 flex-grow flex flex-col justify-center">
+
+                                                                    <div className="p-2 bg-white border border-purple-200 rounded-xl">
+                                                                        <h5 className="font-black text-[11px] text-purple-900">پیگیری و جلسه با دکتر آذین و خانم نوری</h5>
+                                                                        <p className="text-[10px] text-zinc-500 font-bold">جلسات و مراجعات مکرر</p>
+                                                                    </div>
+
+																<span className="text-[10px] font-black text-amber-700 border-2 border-amber-200 bg-amber-100/60 px-2 py-0.5 rounded-xl mt-3 text-center block">
+                                                                    <i className="fa-solid fa-ban ml-1 text-[9px]"></i>
+                                                                    اصرار بر اعلام محدودیت نهادهای نظارتی و حراستی
+                                                                                                                            </span>
+
+                                                                </div>
+
+                                                            </div>
+
+                                                            {/* Path 3: توسعه بازرگانی (Indigo Theme) */}
+                                                            <div className="bg-indigo-50/50 border-2 border-indigo-200 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+                                                                <span className="text-xs font-black text-indigo-800 bg-indigo-100 px-3 py-1 rounded-lg inline-block w-fit mb-2">{toPersianDigits(3)}. پیگیری بازرگانی</span>
+                                                                <div className="space-y-2 flex-grow flex flex-col justify-center">
+                                                                    <div className="p-2 bg-white border border-indigo-200 rounded-xl">
+                                                                        <h5 className="font-black text-[11px] text-indigo-900">تسلیم نامه جدید انجمن</h5>
+                                                                        <p className="text-[10px] text-zinc-500 font-bold">به معاونت توسعه بازرگانی</p>
+                                                                    </div>
+                                                                    <div className="text-center text-indigo-500 text-xs"><i className="fa-solid fa-arrow-down-long"></i></div>
+                                                                    <div className="p-2 bg-white border border-indigo-200 rounded-xl">
+                                                                        <h5 className="font-black text-[11px] text-indigo-900">دفتر تدوین مقررات</h5>
+                                                                        <p className="text-[10px] text-zinc-500 font-bold">دریافت مستندات جهت اعلام نظر</p>
+                                                                    </div>
+                                                                </div>
+                                                                <span className="text-[10px] font-black text-blue-700 border-2 border-blue-200 bg-blue-100/60 px-2 py-0.5 rounded-xl mt-3 text-center block">
+                                                                    <i className="fa-solid fa-magnifying-glass ml-1 text-[9px]"></i>
+                                                                    در حال بررسی
+                                                                </span>
+                                                            </div>
+
+                                                            {/* Path 4: حراست وزارت جهاد (Rose Theme) */}
+                                                            <div className="bg-rose-50/50 border-2 border-rose-200 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+                                                                <span className="text-xs font-black text-rose-800 bg-rose-100 px-3 py-1 rounded-lg inline-block w-fit mb-2">{toPersianDigits(4)}. حراست وزارت جهاد کشاورزی</span>
+                                                                <div className="space-y-2 flex-grow flex flex-col justify-center">
+                                                                    <div className="p-2 bg-white border border-rose-200 rounded-xl">
+                                                                        <h5 className="font-black text-[11px] text-rose-900">حراست وزارت جهاد (دکتر محمدرضا محمدی)</h5>
+                                                                        <p className="text-[10px] text-zinc-500 font-bold">عنوان درخواست و تشریح پیگیری ها</p>
+                                                                    </div>
+                                                                    <div className="text-center text-rose-500 text-xs"><i className="fa-solid fa-arrow-down-long"></i></div>
+                                                                    <div className="p-2 bg-white border border-rose-200 rounded-xl">
+                                                                        <h5 className="font-black text-[11px] text-rose-900">درخواست اعلام نظر</h5>
+                                                                    </div>
+                                                                </div>
+                                                                <span className="text-[10px] font-black text-slate-700 border-2 border-slate-200 bg-slate-100/60 px-2 py-0.5 rounded-xl mt-3 text-center block">
+                                                                    <i className="fa-solid fa-circle-xmark ml-1 text-[9px]"></i>
+                                                                    در حال پیگیری
+                                                                </span>
+                                                            </div>
+
+                                                        </div>
+                                                    )}
+
+                                                    {/* Individual Detailed Paths */}
+                                                    {selectedKenyaPath === 'path1' && (
+                                                        <div className="bg-white p-5 rounded-2xl border-l-8 border-teal-500 shadow-sm space-y-3">
+                                                            <h4 className="font-black text-base md:text-lg text-teal-800"><i className="fa-solid fa-arrow-right-to-bracket"></i> مسیر {toPersianDigits(1)}: ارجاع به تدوین مقررات</h4>
+                                                            <p className="text-sm md:text-base text-zinc-800 font-semibold leading-relaxed">
+                                                                جریان اداری پرونده واردات کنیا با دستور معاونت توسعه بازرگانی (دکتر فتحی) آغاز و به دفتر تدوین مقررات (دکتر آذین) ارسال شد. سپس پرونده به جناب نوری (معاون دفتر تدوین مقررات) ارجاع گردید که به علت عدم پیگیری نقش عالی ریاست کل سازمان چای با وقفه مواجه شد.
+                                                            </p>
+                                                        </div>
+                                                    )}
+
+                                                    {selectedKenyaPath === 'path2' && (
+                                                        <div className="bg-white p-5 rounded-2xl border-l-8 border-purple-500 shadow-sm space-y-3">
+                                                            <h4 className="font-black text-base md:text-lg text-purple-800"><i className="fa-solid fa-users-rectangle"></i> مسیر {toPersianDigits(2)}: مراجعات و جلسات مکرر حضوری</h4>
+                                                            <p className="text-sm md:text-base text-zinc-800 font-semibold leading-relaxed">
+                                                                پیگیری‌های مستمر و مکرر دبیرخانه انجمن و برگزاری جلسات حضوری با دکتر آذین و خانم نوری جهت ترخیص کالا؛ مسئولین همچنان بر اعمال محدودیت صادر شده از سوی مقامات بالادستی (ریاست سازمان چای) اصرار ورزیدند.
+                                                            </p>
+                                                        </div>
+                                                    )}
+
+                                                    {selectedKenyaPath === 'path3' && (
+                                                        <div className="bg-white p-5 rounded-2xl border-l-8 border-indigo-500 shadow-sm space-y-3">
+                                                            <h4 className="font-black text-base md:text-lg text-indigo-800"><i className="fa-solid fa-file-signature"></i> مسیر {toPersianDigits(3)}: پیگیری رسمی گمرکی</h4>
+                                                            <p className="text-sm md:text-base text-zinc-800 font-semibold leading-relaxed">
+                                                                تسلیم نامه جدید از طرف انجمن به معاونت توسعه بازرگانی جهت دریافت اعلام نظر صریح اداری به منظور رفع بن‌بست گمرکی کالا، که در نهایت به ارجاع مجدد جهت پایش تخصصی به دفتر تدوین مقررات انجامید و هم‌اکنون در حال بررسی می‌باشد.
+                                                            </p>
+                                                        </div>
+                                                    )}
+
+                                                    {selectedKenyaPath === 'path4' && (
+                                                        <div className="bg-white p-5 rounded-2xl border-l-8 border-rose-500 shadow-sm space-y-3">
+                                                            <h4 className="font-black text-base md:text-lg text-rose-800"><i className="fa-solid fa-circle-exclamation"></i> مسیر {toPersianDigits(4)}: مکاتبه با رئیس سازمان چای</h4>
+                                                            <p className="text-sm md:text-base text-zinc-800 font-semibold leading-relaxed">
+                                                                ارسال لایحه رسمی به حبیب جهانساز (رئیس سازمان چای) از طرف وزارت جهاد کشاورزی (دکتر محمدرضا طلایی) با موضوع تشریح پیگیری‌ها و دعوت رسمی به جلسه کارگروه هم‌اندیشی؛ متأسفانه به علت عدم همراهی، پیگیری‌ها بی‌اثر باقی ماند.
+                                                            </p>
+                                                        </div>
+                                                    )}
+
+                                                </div>
+
+                                            </div>
+                                        )}
+
+                                        {/* TOPIC 2: CEYLON TEA BARTER TRADE (Active) */}
+                                        {activeSlide9Topic === 'ceylon' && (
+                                            <div className="flex-grow flex flex-col justify-between overflow-hidden space-y-2 animate-fadeIn">
+                                                
+                                                <div className="shrink-0 text-right">
+                                                    <span className="bg-goldTea-500 text-white px-3 py-1 rounded-xl text-[11px] font-black shadow-sm flex items-center gap-1.5 w-fit">
+                                                        <i className="fa-solid fa-file-invoice"></i>
+                                                        <span>موضوع دوم: تعیین تکلیف پرونده تهاتر چای سیلان (سریلانکا) </span>
+                                                    </span>
+                                                </div>
+
+                                                {/* Structural tree of Ceylon Barter */}
+                                                <div className="flex-grow bg-goldTea-100/10 rounded-2xl border border-goldTea-500/20 p-4 flex flex-col justify-center space-y-3">
+                                                    
+                                                    <h4 className="font-black text-sm text-tea-800 text-center mb-1">ساختار درختی فرآیند ارجاع پرونده تهاتر چای سیلان</h4>
+
+                                                    <div className="grid grid-cols-4 gap-4 items-stretch h-full py-1 text-right">
+                                                        
+                                                        {/* Step 1 (Green/Emerald Theme) */}
+                                                        <div className="bg-emerald-50/50 border-2 border-emerald-200 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+                                                            <span className="text-xs font-black text-emerald-800 bg-emerald-100 px-3 py-1 rounded-lg inline-block w-fit mb-2">{toPersianDigits(1)}. وزارت جهاد کشاورزی</span>
+                                                            <div className="space-y-2">
+                                                                <div className="p-3 bg-white border border-emerald-200 rounded-xl">
+                                                                    <h5 className="font-black text-sm text-tea-800">معاونت توسعه بازرگانی</h5>
+                                                                    <p className="text-xs text-zinc-600 font-bold mt-1">هدایت و پشتیبانی مستقیم دکتر طلایی</p>
+                                                                </div>
+                                                                <div className="text-center text-emerald-500 text-base"><i className="fa-solid fa-arrow-down-long"></i></div>
+                                                                <div className="p-3 bg-white border border-emerald-200 rounded-xl">
+                                                                    <h5 className="font-black text-sm text-tea-800">خروج از محدودیت</h5>
+                                                                    <p className="text-xs text-zinc-600 font-bold mt-1">تأیید خروج ثبت سفارش چای از محدودیت تالار سیلان</p>
+                                                                </div>
+                                                            </div>
+                                                            <span className="text-xs font-black text-emerald-700 border-2 border-emerald-300 bg-emerald-100/50 px-2 py-1 rounded-xl mt-4 text-center block">تأیید شده و ابلاغ شده</span>
+                                                        </div>
+
+                                                        {/* Step 2 (Blue Theme) */}
+                                                        <div className="bg-blue-50/50 border-2 border-blue-200 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+                                                            <span className="text-xs font-black text-blue-800 bg-blue-100 px-3 py-1 rounded-lg inline-block w-fit mb-2">{toPersianDigits(2)}. دفتر تدوین مقررات</span>
+                                                            <div className="space-y-2">
+                                                                <div className="p-3 bg-white border border-blue-200 rounded-xl">
+                                                                    <h5 className="font-black text-sm text-tea-800">دفتر تدوین مقررات</h5>
+                                                                    <p className="text-xs text-zinc-600 font-bold mt-1">دریافت و ثبت پرونده ارجاعی بازرگانی</p>
+                                                                </div>
+                                                                <div className="text-center text-blue-500 text-base"><i className="fa-solid fa-arrow-down-long"></i></div>
+                                                                <div className="p-3 bg-white border border-blue-200 rounded-xl">
+                                                                    <h5 className="font-black text-sm text-tea-800">پایش کارشناسی</h5>
+                                                                    <p className="text-xs text-zinc-600 font-bold mt-1">تهیه دستورالعمل شیوه تخصیص ارز چای ملی</p>
+                                                                </div>
+                                                            </div>
+                                                            <span className="text-xs font-black text-blue-700 border-2 border-blue-300 bg-blue-100/50 px-2 py-1 rounded-xl mt-4 text-center block">ارجاع شده به مراجع بالادستی</span>
+                                                        </div>
+
+                                                        {/* Step 3 (Gold/Amber Theme) */}
+                                                        <div className="bg-amber-50/50 border-2 border-amber-200 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+                                                            <span className="text-xs font-black text-amber-800 bg-amber-100 px-3 py-1 rounded-lg inline-block w-fit mb-2">{toPersianDigits(3)}. بانک مرکزی</span>
+                                                            <div className="space-y-2">
+                                                                <div className="p-3 bg-white border border-amber-200 rounded-xl">
+                                                                    <h5 className="font-black text-sm text-tea-800">معاونت ارزی</h5>
+                                                                    <p className="text-xs text-zinc-600 font-bold mt-1">پذیرش اسناد گمرکی و ثبت سفارشات معوقه</p>
+                                                                </div>
+                                                                <div className="text-center text-amber-500 text-base"><i className="fa-solid fa-arrow-down-long"></i></div>
+                                                                <div className="p-3 bg-white border border-amber-200 rounded-xl">
+                                                                    <h5 className="font-black text-sm text-tea-800">کارگروه ارزی</h5>
+                                                                    <p className="text-xs text-zinc-600 font-bold mt-1">انطباق درخواست‌ها با مقررات ارزی جناب دکتر توکلی</p>
+                                                                </div>
+                                                            </div>
+                                                            <span className="text-xs font-black text-amber-700 border-2 border-amber-300 bg-amber-100/50 px-2 py-1 rounded-xl mt-4 text-center block">در حال بررسی و انطباق فنی</span>
+                                                        </div>
+
+                                                        {/* Step 4 (Indigo Theme) */}
+                                                        <div className="bg-indigo-50/50 border-2 border-indigo-200 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+                                                            <span className="text-xs font-black text-indigo-800 bg-indigo-100 px-3 py-1 rounded-lg inline-block w-fit mb-2">{toPersianDigits(4)}. وضعیت نهایی پیگیری</span>
+                                                            <div className="space-y-2">
+                                                                <div className="p-3 bg-white border border-indigo-200 rounded-xl">
+                                                                    <h5 className="font-black text-sm text-tea-800">دبیرخانه انجمن چای</h5>
+                                                                    <p className="text-xs text-zinc-600 font-bold mt-1">پیگیری حضوری روزانه جهت نهایی‌سازی مصوبه</p>
+                                                                </div>
+                                                                <div className="text-center text-indigo-500 text-base"><i className="fa-solid fa-arrow-down-long"></i></div>
+                                                                <div className="p-3 bg-white border border-indigo-200 rounded-xl">
+                                                                    <h5 className="font-black text-sm text-tea-800">جلوگیری از رسوب کالا</h5>
+                                                                    <p className="text-xs text-zinc-600 font-bold mt-1">تسهیل ترخیص فوری محموله‌ها در گمرکات جنوبی</p>
+                                                                </div>
+                                                            </div>
+                                                            <span className="text-xs font-black text-indigo-700 border-2 border-indigo-300 bg-indigo-100/50 px-2 py-1 rounded-xl mt-4 text-center block">
+                                                                <i className="fa-solid fa-spinner animate-spin ml-1 text-[10px]"></i> در حال پیگیری مداوم
+                                                            </span>
+                                                        </div>
+
+                                                    </div>
+
+                                                    {/* Descriptive Summary of Ceylon instruction */}
+                                                    <div className="p-3 bg-goldTea-500/10 rounded-xl border border-goldTea-500/30 text-right shrink-0">
+                                                        <span className="font-black text-xs block text-goldTea-700 mb-0.5"><i className="fa-solid fa-circle-info"></i> هدف اصلی این دستورالعمل ابلاغی:</span>
+                                                        <p className="text-[11px] text-tea-900 leading-relaxed font-bold">
+                                                            روان‌سازی ثبت درخواست‌های معوقه تخصیص ارز به روش نوین و خارج از محدودیت تالار ارزی سیلان (به شیوه ثبت درخواست تخصیص ارز چای ملی) جهت جلوگیری از رسوب محموله‌ها در گمرکات.
+                                                        </p>
+                                                    </div>
+
+                                                </div>
+
+                                            </div>
+                                        )}
+
+                                    </div>
+                                ) : (
+                                    /* STANDARD SLIDE GENERATION FOR OTHER INDEXES */
+                                    slides[currentSlide].content
+                                )}
+
+                            </div>
+
+                        </div>
+                    </main>
+
+                    {/* PRESENTATION PROGRESS BAR */}
+                    <div className="w-full bg-white border-t-4 border-goldTea-500 px-6 py-4 flex flex-col md:flex-row gap-3 justify-between items-center z-50 shadow-inner h-24 shrink-0">
+                        {/* Slide Progress */}
+                        <div className="w-full md:w-1/3 flex items-center gap-3">
+                            <span className="text-xs md:text-sm text-tea-800 font-black whitespace-nowrap">پیشرفت ارائه:</span>
+                            <div className="flex-grow h-2.5 bg-tea-100 rounded-full overflow-hidden">
+                                <div 
+                                    className="h-full bg-goldTea-500 transition-all duration-300"
+                                    style={{ width: `${((currentSlide + 1) / slides.length) * 100}%` }}
+                                ></div>
+                            </div>
+                        </div>
+
+                        {/* Interactive Page Controllers (RTL Aligned Correctly) */}
+                        <div className="flex items-center gap-4">
+                            <button 
+                                onClick={prevSlide}
+                                disabled={currentSlide === 0}
+                                className={`px-5 py-2.5 rounded-2xl font-black text-sm md:text-base flex items-center gap-2 transition-all ${
+                                    currentSlide === 0 
+                                        ? 'bg-tea-50 text-tea-200 border border-transparent cursor-not-allowed' 
+                                        : 'bg-goldTea-100 hover:bg-goldTea-500 hover:text-white text-goldTea-700 shadow-sm'
+                                }`}
+                            >
+                                <i className="fa-solid fa-arrow-right text-xs"></i>
+                                <span>اسلاید قبلی</span>
+                            </button>
+
+                            <button 
+                                onClick={nextSlide}
+                                disabled={currentSlide === slides.length - 1}
+                                className={`px-5 py-2.5 rounded-2xl font-black text-sm md:text-base flex items-center gap-2 transition-all ${
+                                    currentSlide === slides.length - 1 
+                                        ? 'bg-tea-50 text-tea-200 border border-transparent cursor-not-allowed' 
+                                        : 'bg-tea-500 hover:bg-tea-800 text-white shadow-sm'
+                                }`}
+                            >
+                                <span>اسلاید بعدی</span>
+                                <i className="fa-solid fa-arrow-left text-xs"></i>
+                            </button>
+                        </div>
+
+                        <div className="hidden md:flex items-center gap-2 text-xs text-tea-500 font-bold">
+                            <kbd className="bg-tea-50 px-2 py-0.5 rounded-lg border-2 border-goldTea-500/20 font-black">→</kbd>
+                            <span>و</span>
+                            <kbd className="bg-tea-50 px-2 py-0.5 rounded-lg border-2 border-goldTea-500/20 font-black">←</kbd>
+                            <span>ورق زدن اسلایدها</span>
+                        </div>
+                    </div>
+
+                    {/* INTERACTIVE FULL-SCREEN LISTS OVERLAY MODAL */}
+                    {activeListModal && (
+                        <div className="fixed inset-0 bg-tea-900/60 backdrop-blur-md flex items-center justify-center z-[110] p-4 animate-fadeIn">
+                            <div className="bg-white border-4 border-goldTea-500 rounded-[32px] w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+                                
+                                {/* Modal Header */}
+                                <div className="bg-tea-500 text-white p-5 flex justify-between items-center border-b-4 border-goldTea-500 shrink-0">
+                                    <div className="flex items-center gap-3">
+                                        <i className={`fa-solid ${modalData[activeListModal].icon} text-goldTea-500 text-2xl`}></i>
+                                        <h3 className="text-lg md:text-xl font-[900] text-white">{modalData[activeListModal].title}</h3>
+                                    </div>
+                                    <button 
+                                        onClick={() => setActiveListModal(null)}
+                                        className="bg-goldTea-500 hover:bg-goldTea-600 text-white w-10 h-10 rounded-full flex items-center justify-center font-black transition-all shadow-md shrink-0"
+                                    >
+                                        <i className="fa-solid fa-times text-lg"></i>
+                                    </button>
+                                </div>
+
+                                {/* Scrollable List Panel */}
+                                <div className="p-6 overflow-y-auto bg-tea-50 flex-grow no-scrollbar">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {modalData[activeListModal].items.map((item, index) => (
+                                            <div key={index} className="bg-white p-4 rounded-2xl border border-goldTea-500/20 shadow-sm flex items-start gap-4 hover:border-goldTea-500 transition-colors">
+                                                <span className="w-8 h-8 rounded-xl bg-tea-500 text-white flex items-center justify-center font-black text-sm shrink-0 shadow-sm">
+                                                    {toPersianDigits(index + 1)}
+                                                </span>
+                                                <p className="text-sm md:text-base font-bold text-tea-800 leading-relaxed text-right">{item}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Modal Footer */}
+                                <div className="p-4 bg-white border-t border-tea-100 flex justify-end shrink-0">
+                                    <button 
+                                        onClick={() => setActiveListModal(null)}
+                                        className="bg-tea-800 hover:bg-tea-900 text-white font-black px-6 py-2.5 rounded-2xl transition-all shadow-md"
+                                    >
+                                        بستن پنجره
+                                    </button>
+                                </div>
+
+                            </div>
+                        </div>
+                    )}
+
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
